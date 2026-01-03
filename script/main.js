@@ -1,20 +1,28 @@
-/* ================= Audio & UI ================= */
 let audioCtx = null;
-let master = null;
 let analyser = null;
+let master = null;
 let lfo = null;
 let lfoGain = null;
-let powerOn = false;
-let envOn = true;
-let voices = new Map();
 
-/* Envelope ON/OFF */
-envBtn.onclick = () => {
+let voices = new Map();
+let envOn = true;
+let powerOn = false;
+
+const powerBtn = document.getElementById("powerBtn");
+const envBtn = document.getElementById("envBtn");
+
+powerBtn.onclick = initAudio;
+envBtn.onclick = ()=>{
   envOn = !envOn;
   envBtn.textContent = envOn ? "ON" : "OFF";
 };
 
-/* Audio 初期化 */
+function getWaveform(){
+  const radios = document.getElementsByName("waveform");
+  for(let i=0;i<radios.length;i++) if(radios[i].checked) return radios[i].value;
+  return "sine";
+}
+
 async function initAudio(){
   if(audioCtx) return;
 
@@ -28,7 +36,6 @@ async function initAudio(){
   master.connect(analyser);
   analyser.connect(audioCtx.destination);
 
-  // LFO
   lfo = audioCtx.createOscillator();
   lfo.frequency.value = 5;
   lfoGain = audioCtx.createGain();
@@ -46,31 +53,50 @@ async function initAudio(){
   unlock.stop(audioCtx.currentTime + 0.01);
 
   await audioCtx.resume();
+  powerOn = true; powerBtn.textContent = "ON";
 
-  powerOn = true;
-  powerBtn.textContent = "ON";
-
-  drawLoop(); // 描画開始
+  drawLoop();
+  modLoop();
 }
 
-/* POWER ボタン */
-powerBtn.onclick = initAudio;
+// Polyphonic
+const keyMap = { a:261.63,b:293.66,c:329.63,d:349.23,e:392,f:440,g:493.88,h:523.25 };
+window.addEventListener("keydown", e=>{
+  if(!powerOn || e.repeat) return;
+  const k = e.key.toLowerCase();
+  if(!keyMap[k]) return;
+  kickBall();
+  noteOn(k,keyMap[k]);
+});
+window.addEventListener("keyup", e=>{
+  if(!powerOn) return;
+  noteOff(e.key.toLowerCase());
+});
 
-/* Gravity スライダー */
-gravity.oninput = e => {
-  engine.gravity.y = +e.target.value;
-  gravityVal.textContent = (+e.target.value).toFixed(2);
-};
+// Y modulation
+function yNorm(){ return Math.min(Math.max(ball.position.y/400,0),1); }
+function modLoop(){
+  if(!audioCtx) return;
+  voices.forEach(v=>{
+    const y = yNorm();
+    if(document.getElementById("yAssign").value==="pitch"){
+      v.osc.frequency.setValueAtTime(v.baseFreq*Math.pow(2,(0.5-y)), audioCtx.currentTime);
+      lfoGain.gain.value=0;
+    } else if(document.getElementById("yAssign").value==="vibrato"){
+      lfoGain.gain.value = y*20;
+    } else{
+      v.osc.frequency.setValueAtTime(v.baseFreq, audioCtx.currentTime);
+      lfoGain.gain.value=0;
+    }
+  });
+  requestAnimationFrame(modLoop);
+}
 
-/* XY正規化 */
-function yNorm(){ return Math.min(Math.max(ball.position.y / 400, 0), 1); }
-
-/* ノート ON/OFF */
+// noteOn / noteOff
 function noteOn(key,freq){
-  if(!powerOn || voices.has(key)) return;
-
+  if(voices.has(key)) return;
   const osc = audioCtx.createOscillator();
-  osc.type = waveform.value;
+  osc.type = getWaveform();
   osc.frequency.value = freq;
 
   const gain = audioCtx.createGain();
@@ -85,7 +111,7 @@ function noteOn(key,freq){
   if(envOn){
     const now = audioCtx.currentTime;
     const y = yNorm();
-    const level = (yAssign.value==="env") ? (0.2 + y*0.8) : 1;
+    const level = document.getElementById("yAssign").value==="env" ? 0.2+y*0.8 : 1;
     gain.gain.setValueAtTime(0, now);
     gain.gain.linearRampToValueAtTime(level, now+0.01);
   }
@@ -94,65 +120,14 @@ function noteOn(key,freq){
 }
 
 function noteOff(key){
-  const v = voices.get(key);
-  if(!v) return;
-
+  const v = voices.get(key); if(!v) return;
   const now = audioCtx.currentTime;
   if(envOn){
-    const y = yNorm();
-    const rel = (yAssign.value==="env") ? (0.05 + y*1.2) : 0.1;
+    const y=yNorm();
+    const rel=document.getElementById("yAssign").value==="env" ? 0.05+y*1.2 : 0.1;
     v.gain.gain.setValueAtTime(v.gain.gain.value, now);
     v.gain.gain.linearRampToValueAtTime(0, now+rel);
-    v.osc.stop(now + rel + 0.02);
-  } else {
-    v.osc.stop();
-  }
-
+    v.osc.stop(now+rel+0.02);
+  } else v.osc.stop();
   voices.delete(key);
 }
-
-/* Yモジュレーション */
-function modLoop(){
-  if(!audioCtx) return;
-
-  voices.forEach(v => {
-    const y = yNorm();
-    if(yAssign.value==="pitch"){
-      v.osc.frequency.setValueAtTime(v.baseFreq * Math.pow(2,(0.5 - y)), audioCtx.currentTime);
-      lfoGain.gain.value = 0;
-    } else if(yAssign.value==="vibrato"){
-      lfoGain.gain.value = y*20;
-    } else {
-      v.osc.frequency.setValueAtTime(v.baseFreq, audioCtx.currentTime);
-      lfoGain.gain.value = 0;
-    }
-  });
-
-  requestAnimationFrame(modLoop);
-}
-modLoop(); // Yモジュレーション開始
-
-/* キーボード */
-const keyMap = { a:261.63,b:293.66,c:329.63,d:349.23,
-                 e:392,f:440,g:493.88,h:523.25 };
-
-window.addEventListener("keydown", e => {
-  if(e.repeat) return;
-  if(!powerOn) return;
-  const k = e.key.toLowerCase();
-  if(!keyMap[k]) return;
-  kickBall();
-  noteOn(k,keyMap[k]);
-});
-
-window.addEventListener("keyup", e => {
-  if(!powerOn) return;
-  noteOff(e.key.toLowerCase());
-});
-
-/* XY表示更新 */
-(function xyLoop(){
-  posX.textContent = ball.position.x.toFixed(1);
-  posY.textContent = ball.position.y.toFixed(1);
-  requestAnimationFrame(xyLoop);
-})();

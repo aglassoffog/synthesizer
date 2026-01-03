@@ -15,19 +15,22 @@
     <label>POWER</label>
     <button id="powerBtn">OFF</button>
   </div>
-  <div class="knob">
-    <label>Waveform</label>
-    <select id="waveform">
-      <option>sine</option>
-      <option>square</option>
-      <option>sawtooth</option>
-      <option>triangle</option>
-    </select>
-  </div>
+
   <div class="knob">
     <label>Envelope</label>
     <button id="envBtn">ON</button>
   </div>
+
+  <div class="knob">
+    <label>Waveform</label>
+    <div>
+      <label><input type="radio" name="waveform" value="sine" checked> Sine</label><br>
+      <label><input type="radio" name="waveform" value="square"> Square</label><br>
+      <label><input type="radio" name="waveform" value="sawtooth"> Sawtooth</label><br>
+      <label><input type="radio" name="waveform" value="triangle"> Triangle</label>
+    </div>
+  </div>
+
   <div class="knob">
     <label>Y Assign</label>
     <select id="yAssign">
@@ -37,6 +40,7 @@
       <option value="env">Envelope</option>
     </select>
   </div>
+
   <div class="knob">
     <label>Gravity</label>
     <input id="gravity" type="range" min="-2" max="2" step="0.01" value="0">
@@ -49,7 +53,7 @@ X:<span id="posX">0</span> | Y:<span id="posY">0</span>
 </div>
 
 <div class="canvas-container">
-  <canvas id="scope" width="400" height="150"></canvas>
+  <canvas id="scope" width="400" height="180"></canvas>
   <canvas id="fft" width="400" height="180"></canvas>
 </div>
 
@@ -61,8 +65,8 @@ X:<span id="posX">0</span> | Y:<span id="posY">0</span>
 <p>A〜Hキー：発音＋キック</p>
 
 <script src="https://cdn.jsdelivr.net/npm/matter-js@0.19.0/build/matter.min.js"></script>
-<script src="script/draw.js"></script>
 <script src="script/physics.js"></script>
+<script src="script/graphs.js"></script>
 <script src="script/main.js"></script>
 </body>
 </html>
