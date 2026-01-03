@@ -15,12 +15,9 @@
     <label>POWER</label>
     <button id="powerBtn">OFF</button>
   </div>
+</div>
 
-  <div class="knob">
-    <label>Envelope</label>
-    <button id="envBtn">ON</button>
-  </div>
-
+<div class="controls">
   <div class="knob">
     <label>Waveform</label>
     <div>
@@ -30,7 +27,28 @@
       <label><input type="radio" name="waveform" value="triangle"> Triangle</label>
     </div>
   </div>
+</div>
 
+<div class="controls">
+  <div class="knob">
+    <label>Attack</label>
+    <input id="attack" type="range" min="0.001" max="1" step="0.001" value="0.01">
+  </div>
+  <div class="knob">
+    <label>Decay</label>
+    <input id="decay" type="range" min="0.001" max="1" step="0.001" value="0.1">
+  </div>
+  <div class="knob">
+    <label>Sustain</label>
+    <input id="sustain" type="range" min="0" max="1" step="0.01" value="0.7">
+  </div>
+  <div class="knob">
+    <label>Release</label>
+    <input id="release" type="range" min="0.001" max="2" step="0.001" value="0.2">
+  </div>
+</div>
+
+<div class="controls">
   <div class="knob">
     <label>Y Assign</label>
     <select id="yAssign">
@@ -48,10 +66,6 @@
   </div>
 </div>
 
-<div class="coords">
-X:<span id="posX">0</span> | Y:<span id="posY">0</span>
-</div>
-
 <div class="canvas-container">
   <canvas id="scope" width="400" height="180"></canvas>
   <canvas id="fft" width="400" height="180"></canvas>
@@ -60,6 +74,9 @@ X:<span id="posX">0</span> | Y:<span id="posY">0</span>
 <div class="canvas-container">
   <canvas id="world" width="400" height="400"></canvas>
   <canvas id="xy" width="400" height="400"></canvas>
+</div>
+<div class="coords">
+X:<span id="posX">0</span> | Y:<span id="posY">0</span>
 </div>
 
 <p>A〜Hキー：発音＋キック</p>
