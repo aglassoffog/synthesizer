@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>物理エンジン x シンセサイザー</title>
+<style>
+body { background:#111; color:#eee; font-family:sans-serif; }
+.controls { display:flex; gap:16px; flex-wrap:wrap; margin-top:8px; }
+.knob { display:flex; flex-direction:column; font-size:12px; }
+.canvas-container { display:flex; gap:6px; margin-top:8px; }
+canvas { background:#000; border:1px solid #333; display:block; }
+button,select,input { width:140px; }
+.coords { font-family:monospace; color:#00ff88; margin-top:8px; }
+.version { color:#888; font-size:12px; margin-bottom:6px; }
+</style>
+</head>
+<body>
+
+<h2>物理エンジン x シンセサイザー</h2>
+<div class="version">Version: v1.3.6</div>
+
+<div class="controls">
+  <div class="knob">
+    <label>POWER</label>
+    <button id="powerBtn">OFF</button>
+  </div>
+  <div class="knob">
+    <label>Waveform</label>
+    <select id="waveform">
+      <option>sine</option>
+      <option>square</option>
+      <option>sawtooth</option>
+      <option>triangle</option>
+    </select>
+  </div>
+  <div class="knob">
+    <label>Envelope</label>
+    <button id="envBtn">ON</button>
+  </div>
+  <div class="knob">
+    <label>Y Assign</label>
+    <select id="yAssign">
+      <option value="off">OFF</option>
+      <option value="pitch">Pitch</option>
+      <option value="vibrato">Vibrato</option>
+      <option value="env">Envelope</option>
+    </select>
+  </div>
+  <div class="knob">
+    <label>Gravity</label>
+    <input id="gravity" type="range" min="-2" max="2" step="0.01" value="0">
+    <div id="gravityVal">0</div>
+  </div>
+</div>
+
+<div class="coords">
+X:<span id="posX">0</span> | Y:<span id="posY">0</span>
+</div>
+
+<!-- 波形・FFT -->
+<div class="canvas-container">
+  <canvas id="scope" width="400" height="150"></canvas>
+  <canvas id="fft" width="400" height="180"></canvas>
+</div>
+
+<!-- 物理キャンバスとXYリサージュ（正方形、横幅400pxに揃えた） -->
+<div class="canvas-container">
+  <canvas id="world" width="400" height="400"></canvas>
+  <canvas id="xy" width="400" height="400"></canvas>
+</div>
+
+<p>A〜Hキー：発音＋キック</p>
+
+<script src="https://cdn.jsdelivr.net/npm/matter-js@0.19.0/build/matter.min.js"></script>
+<script>
+/* ================= Matter.js ================= */
+const { Engine, Render, World, Bodies, Body, Runner } = Matter;
+const W = 400, H = 400;
+
+const engine = Engine.create();
+engine.gravity.y = 0;
+
+Render.run(Render.create({
+  canvas: world,
+  engine,
+  options:{ width:W, height:H, wireframes:false, background:"#000" }
+}));
+
+const runner = Runner.create();
+Runner.run(runner, engine);
+
+const ball = Bodies.circle(W/2,H/2,15,{
+  restitution:1,
+  friction:0,
+  frictionStatic:0,
+  frictionAir:0
+});
+
+World.add(engine.world,[
+  ball,
+  Bodies.rectangle(W/2,-20,W,40,{isStatic:true}),
+  Bodies.rectangle(W/2,H+20,W,40,{isStatic:true}),
+  Bodies.rectangle(-20,H/2,40,H,{isStatic:true}),
+  Bodies.rectangle(W+20,H/2,40,H,{isStatic:true})
+]);
+
+function kickBall(){
+  Body.setVelocity(ball,{x:0,y:0});
+  Body.setAngularVelocity(ball,0);
+  const f = 0.012;
+  Body.applyForce(ball, ball.position,{
+    x:Math.cos(Math.PI/4)*f,
+    y:Math.sin(Math.PI/4)*f
+  });
+}
+
+/* XY表示 */
+(function xyLoop(){
+  posX.textContent = ball.position.x.toFixed(1);
+  posY.textContent = ball.position.y.toFixed(1);
+  requestAnimationFrame(xyLoop);
+})();
+
+gravity.oninput = e=>{
+  engine.gravity.y = +e.target.value;
+  gravityVal.textContent = (+e.target.value).toFixed(2);
+};
+
+/* ================= Audio ================= */
+let audioCtx=null, master=null, analyser=null, lfo=null, lfoGain=null;
+let powerOn=false, envOn=true, voices=new Map();
+
+envBtn.onclick = ()=>{
+  envOn = !envOn;
+  envBtn.textContent = envOn?"ON":"OFF";
+};
+
+async function initAudio(){
+  if(audioCtx) return;
+  audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+  master = audioCtx.createGain(); master.gain.value = 0.25;
+
+  analyser = audioCtx.createAnalyser();
+  analyser.fftSize = 2048;
+  analyser.smoothingTimeConstant = 0.8;
+  master.connect(analyser); analyser.connect(audioCtx.destination);
+
+  lfo = audioCtx.createOscillator();
+  lfo.frequency.value=5;
+  lfoGain = audioCtx.createGain(); lfoGain.gain.value=0;
+  lfo.connect(lfoGain); lfo.start();
+
+  const unlock=audioCtx.createOscillator();
+  const unlockGain=audioCtx.createGain(); unlockGain.gain.value=0;
+  unlock.connect(unlockGain); unlockGain.connect(audioCtx.destination);
+  unlock.start(); unlock.stop(audioCtx.currentTime+0.01);
+
+  await audioCtx.resume();
+  powerOn=true; powerBtn.textContent="ON";
+  modLoop();
+}
+
+powerBtn.onclick=initAudio;
+
+function yNorm(){ return Math.min(Math.max(ball.position.y/H,0),1); }
+
+function noteOn(key,freq){
+  if(!powerOn||voices.has(key)) return;
+  const osc = audioCtx.createOscillator();
+  osc.type=waveform.value; osc.frequency.value=freq;
+  const gain=audioCtx.createGain(); gain.gain.value=envOn?0:1;
+  osc.connect(gain); gain.connect(master); lfoGain.connect(osc.frequency); osc.start();
+  if(envOn){
+    const now=audioCtx.currentTime;
+    const y=yNorm();
+    const level=(yAssign.value==="env")?0.2+y*0.8:1;
+    gain.gain.setValueAtTime(0,now);
+    gain.gain.linearRampToValueAtTime(level,now+0.01);
+  }
+  voices.set(key,{osc,gain,baseFreq:freq});
+}
+
+function noteOff(key){
+  const v=voices.get(key); if(!v) return;
+  const now=audioCtx.currentTime;
+  if(envOn){
+    const y=yNorm(); const rel=(yAssign.value==="env")?0.05+y*1.2:0.1;
+    v.gain.gain.setValueAtTime(v.gain.gain.value,now);
+    v.gain.gain.linearRampToValueAtTime(0,now+rel);
+    v.osc.stop(now+rel+0.02);
+  } else v.osc.stop();
+  voices.delete(key);
+}
+
+function modLoop(){
+  if(!audioCtx) return;
+  voices.forEach(v=>{
+    const y=yNorm();
+    if(yAssign.value==="pitch"){v.osc.frequency.setValueAtTime(v.baseFreq*Math.pow(2,0.5-y),audioCtx.currentTime); lfoGain.gain.value=0;}
+    else if(yAssign.value==="vibrato"){lfoGain.gain.value=y*20;}
+    else{v.osc.frequency.setValueAtTime(v.baseFreq,audioCtx.currentTime); lfoGain.gain.value=0;}
+  });
+  requestAnimationFrame(modLoop);
+}
+
+const keyMap={a:261.63,b:293.66,c:329.63,d:349.23,e:392,f:440,g:493.88,h:523.25};
+window.addEventListener("keydown",e=>{if(e.repeat||!powerOn) return; const k=e.key.toLowerCase(); if(!keyMap[k]) return; kickBall(); noteOn(k,keyMap[k]);});
+window.addEventListener("keyup",e=>{if(!powerOn) return; noteOff(e.key.toLowerCase());});
+
+/* ================= Scope & FFT & XY ================= */
+const sctx=scope.getContext("2d");
+const fctx=fft.getContext("2d");
+const xyCtx=xy.getContext("2d");
+let timeData=new Float32Array(2048);
+let freqData=new Uint8Array(1024);
+let xyData=new Uint8Array(1024);
+let xyOffset=32;
+
+const triggerLevel=0;
+const samplesToDraw=1024;
+
+function findTriggerIndex(data){
+  for(let i=1;i<data.length;i++){if(data[i-1]<triggerLevel&&data[i]>=triggerLevel)return i;}
+  return 0;
+}
+
+function drawGrid(){
+  sctx.strokeStyle="#033"; sctx.lineWidth=1;
+  const divX=10, divY=4;
+  for(let i=1;i<divX;i++){const x=(scope.width/divX)*i; sctx.beginPath(); sctx.moveTo(x,0); sctx.lineTo(x,scope.height); sctx.stroke();}
+  for(let i=1;i<divY;i++){const y=(scope.height/divY)*i; sctx.beginPath(); sctx.moveTo(0,y); sctx.lineTo(scope.width,y); sctx.stroke();}
+  sctx.strokeStyle="#055"; sctx.beginPath(); sctx.moveTo(0,scope.height/2); sctx.lineTo(scope.width,scope.height/2); sctx.stroke();
+}
+
+function drawXY(){
+  analyser.getByteTimeDomainData(xyData);
+  xyCtx.fillStyle="rgba(0,0,0,0.25)"; xyCtx.fillRect(0,0,xy.width,xy.height);
+
+  xyCtx.strokeStyle="#033"; xyCtx.lineWidth=1;
+  for(let i=1;i<4;i++){
+    const p=(xy.width/4)*i;
+    xyCtx.beginPath(); xyCtx.moveTo(p,0); xyCtx.lineTo(p,xy.height); xyCtx.stroke();
+    xyCtx.beginPath(); xyCtx.moveTo(0,p); xyCtx.lineTo(xy.width,p); xyCtx.stroke();
+  }
+
+  xyCtx.strokeStyle="#055";
+  xyCtx.beginPath(); xyCtx.moveTo(xy.width/2,0); xyCtx.lineTo(xy.width/2,xy.height); xyCtx.stroke();
+  xyCtx.beginPath(); xyCtx.moveTo(0,xy.height/2); xyCtx.lineTo(xy.width,xy.height/2); xyCtx.stroke();
+
+  xyCtx.strokeStyle="#00ff88"; xyCtx.lineWidth=1.5; xyCtx.beginPath();
+  for(let i=0;i<xyData.length-xyOffset;i++){
+    const xVal=(xyData[i]-128)/128;
+    const yVal=(xyData[i+xyOffset]-128)/128;
+    const x=xy.width/2 + xVal*xy.width/2;
+    const y=xy.height/2 - yVal*xy.height/2;
+    i===0? xyCtx.moveTo(x,y): xyCtx.lineTo(x,y);
+  }
+  xyCtx.stroke();
+}
+
+function draw(){
+  requestAnimationFrame(draw);
+  if(!audioCtx) return;
+
+  analyser.getFloatTimeDomainData(timeData);
+  const start=findTriggerIndex(timeData);
+
+  sctx.fillStyle="rgba(0,0,0,0.25)"; sctx.fillRect(0,0,scope.width,scope.height);
+  drawGrid();
+  sctx.strokeStyle="#0f0"; sctx.lineWidth=2; sctx.beginPath();
+  for(let i=0;i<samplesToDraw;i++){
+    const idx=(start+i)%timeData.length;
+    const v=timeData[idx];
+    const x=(i/samplesToDraw)*scope.width;
+    const y=scope.height/2 - v*scope.height/2;
+    i===0? sctx.moveTo(x,y): sctx.lineTo(x,y);
+  }
+  sctx.stroke();
+
+  analyser.getByteFrequencyData(freqData);
+  fctx.fillStyle="black"; fctx.fillRect(0,0,fft.width,fft.height);
+  const barWidth=fft.width/freqData.length;
+  for(let i=0;i<freqData.length;i++){
+    const h=(freqData[i]/255)*(fft.height-20);
+    fctx.fillStyle="#08f"; fctx.fillRect(i*barWidth, fft.height-h-20, barWidth,h);
+  }
+
+  drawXY();
+}
+
+draw();
+</script>
+</body>
+</html>
