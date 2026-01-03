@@ -6,3 +6,21 @@ canvas { background:#000; border:1px solid #333; display:block; }
 button,select,input { width:140px; }
 .coords { font-family:monospace; color:#00ff88; margin-top:8px; }
 .version { color:#888; font-size:12px; margin-bottom:6px; }
+.waveform-group {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.waveform-group label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 12px;
+  cursor: pointer;
+  gap: 4px;
+}
+
+.waveform-group input[type="radio"] {
+  cursor: pointer;
+}
