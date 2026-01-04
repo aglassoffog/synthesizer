@@ -4,7 +4,8 @@ select { width:133px; background: #222; color: #aaa; font-size: 12px; }
 
 .knob { display:flex; flex-direction:column; font-size:12px; }
 .coords { font-family:monospace; color:#0ff; margin-top:8px; }
-.version { color:#888; font-size:12px; margin-bottom:6px; }
+.version { color:#888; font-size:12px; }
+.footer { color: #666;  font-size: 11px; }
 
 .control-row {
   display: flex;
@@ -104,6 +105,8 @@ select { width:133px; background: #222; color: #aaa; font-size: 12px; }
 canvas { background:#000; border:1px solid #333; display:block; }
 
 .canvas-container { display:flex; gap:6px; margin-top:8px; }
+
+
 
 /*
 .physics-container {

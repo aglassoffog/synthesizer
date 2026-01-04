@@ -182,6 +182,8 @@ delayTime.oninput = e => {
   baseDelayTime = parseFloat(e.target.value);
   if (yAssign.value !== "delay") {
     delayNode.delayTime.setTargetAtTime(baseDelayTime, audioCtx.currentTime, 0.01);
+  } else {
+    delayNode.delayTime.setTargetAtTime(0.15, audioCtx.currentTime, 0.05); // ← 超重要：スムージング
   }
 };
 
@@ -190,6 +192,8 @@ delayFb.oninput = e => {
   baseDelayFeedback = parseFloat(e.target.value);
   if (yAssign.value !== "delay") {
     delayFeedback.gain.setTargetAtTime(baseDelayFeedback, audioCtx.currentTime, 0.01);
+  } else {
+    delayFeedback.gain.setTargetAtTime(0.0, audioCtx.currentTime, 0.01 );
   }
 };
 
@@ -229,7 +233,7 @@ function boostDelayFeedback() {
     Math.min(baseDelayFeedback + 0.3, 0.9),
     now + 0.01
   );
-  delayFeedback.gain.linearRampToValueAtTime(0.0, now + 0.12);
+  delayFeedback.gain.linearRampToValueAtTime(0.0, now + 0.16);
   //delayFeedback.gain.exponentialRampToValueAtTime(
   //  Math.max(base, 0.001),
   //  now + 0.25
@@ -264,18 +268,6 @@ function modLoop() {
         audioCtx.currentTime
       );
       lfoGain.gain.value = 0;
-    }
-    else if (yAssign.value === "delay"){
-      delayNode.delayTime.setTargetAtTime(
-        0.15,
-        audioCtx.currentTime,
-        0.05   // ← 超重要：スムージング
-      );
-      delayFeedback.gain.setTargetAtTime(
-        0.0,
-        audioCtx.currentTime,
-        0.25
-      )
     }
   });
 
