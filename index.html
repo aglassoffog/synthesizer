@@ -2,12 +2,12 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>Physics Synth</title>
+<title>Physics Modulation Synth</title>
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
-<h2>Physics Synth</h2>
+<h2>Physics Modulation Synth</h2>
 
 <div class="controls">
   <button id="startBtn" class="start-btn">START</button>
@@ -16,24 +16,13 @@
 <div class="control-row">
   <div class="row-label">Waveform</div>
   <div class="controls">
-      <div class="waveform-group">
-        <label>
-          <span>Sine</span>
-          <input type="radio" name="waveform" value="sine" checked>
-        </label>
-        <label>
-          <span>Square</span>
-          <input type="radio" name="waveform" value="square">
-        </label>
-        <label>
-          <span>Saw</span>
-          <input type="radio" name="waveform" value="sawtooth">
-        </label>
-        <label>
-          <span>Tri</span>
-          <input type="radio" name="waveform" value="triangle">
-        </label>
+      <div class="waveform-buttons">
+        <button class="waveform-btn active" data-waveform="sine">Sine</button>
+        <button class="waveform-btn" data-waveform="square">Square</button>
+        <button class="waveform-btn" data-waveform="saw">Saw</button>
+        <button class="waveform-btn" data-waveform="triangle">Tri</button>
       </div>
+    </div>
   </div>
 </div>
 
@@ -97,8 +86,14 @@
 <div class="control-row">
   <div class="row-label">Keys</div>
   <div class="controls">
-    <div class="knob">
-      <div id="keyButtons" class="key-buttons"></div>
+    <div id="keyButtons" class="key-buttons">
+      <button class="key-btn active" data-key="c">C</button>
+      <button class="key-btn" data-key="d">D</button>
+      <button class="key-btn" data-key="e">E</button>
+      <button class="key-btn" data-key="f">F</button>
+      <button class="key-btn" data-key="g">G</button>
+      <button class="key-btn" data-key="a">A</button>
+      <button class="key-btn" data-key="b">B</button>
     </div>
   </div>
 </div>

@@ -28,10 +28,6 @@ const decay   = document.getElementById("decay");
 const sustain = document.getElementById("sustain");
 const release = document.getElementById("release");
 
-/* Waveform radios */
-document.querySelectorAll("input[name='waveform']").forEach(r => {
-  r.onchange = e => currentWaveform = e.target.value;
-});
 
 const ballSizeSlider = document.getElementById("ballSize");
 const ballSizeVal = document.getElementById("ballSizeVal");
@@ -43,6 +39,8 @@ ballSizeSlider.addEventListener("input", e => {
   setBallRadius(size);
 });
 
+const keyButtonsEl = document.getElementById("keyButtons");
+
 const KEY_LIST = [
   { name: "C", key: "c", freq: 261.63 },
   { name: "D", key: "d", freq: 293.66 },
@@ -53,41 +51,91 @@ const KEY_LIST = [
   { name: "B", key: "b", freq: 493.88 }
 ];
 
-const keyButtonsEl = document.getElementById("keyButtons");
+const waveformTypes = ["sine", "square", "sawtooth", "triangle"];
+
+const waveformStates = {
+  sine: true,
+  square: false,
+  sawtooth: false,
+  triangle: false
+};
+
 
 const keyState = {};
 const noteState = {}; // note on/off
 
-KEY_LIST.forEach((k, i) => {
-  keyState[k.key] = i === 0; // Cのみtrue
-  noteState[k.key] = false;
-
-  const btn = document.createElement("button");
-  btn.textContent = k.name;
-  btn.className = "key-btn" + (keyState[k.key] ? " active" : "");
-  btn.dataset.key = k.key;
+document.querySelectorAll(".key-btn").forEach(btn => {
+  const key = btn.dataset.key;
+  keyState[key] = key === 'c'; // Cのみtrue
+  noteState[key] = false;
 
   btn.onclick = () => {
-    if (noteState[k.key]) {
-      noteOff(k.key);
-      noteState[k.key] = false;
-      setNoteButtonState(k.key, false);
+    if (noteState[key]) {
+      noteOff(key);
     }
-    keyState[k.key] = !keyState[k.key];
-    btn.classList.toggle("active", keyState[k.key]);
-  };
-
-  keyButtonsEl.appendChild(btn);
+    keyState[key] = !keyState[key];
+    btn.classList.toggle("active", keyState[key]);
+  }
 });
+
+document.querySelectorAll(".waveform-btn").forEach(btn => {
+  btn.onclick = () => {
+    const type = btn.dataset.waveform;
+
+    // 発音中ならその波形全て note off して無効化
+    if (waveformStates[type]) {
+      voices.forEach((v, key) => {
+        if (v.waveform === type) {
+          noteOff(key);
+        }
+      });
+    }
+
+    waveformStates[type] = !waveformStates[type];
+    btn.classList.toggle("active", waveformStates[type]);
+  };
+});
+
+function setNoteButtonState(key, on) {
+  const btn = document.querySelector(`.key-btn[data-key="${key}"]`);
+  if (!btn) return;
+  btn.classList.toggle("note-on", on);
+}
+
+function setWaveformPlaying(type, playing) {
+  document
+    .querySelector(`.waveform-btn[data-waveform="${type}"]`)
+    ?.classList.toggle("playing", playing);
+}
+
+function isWaveformStillPlaying(type) {
+  for (const v of voices.values()) {
+    if (v.waveform === type) return true;
+  }
+  return false;
+}
+
+
+
 
 function onSideWallHit(side) {
   // 有効なKEYボタン一覧
   const activeKeys = KEY_LIST.filter(k => keyState[k.key]);
   if (activeKeys.length === 0) return;
 
+  const activeWaveforms = waveformTypes.filter(w => waveformStates[w]);
+  if (activeWaveforms.length === 0) return;
+
   // ランダムに1つ選ぶ
-  const picked = activeKeys[Math.floor(Math.random() * activeKeys.length)];
-  toggleNote(picked);
+  const k = activeKeys[Math.floor(Math.random() * activeKeys.length)];
+  const w = activeWaveforms[Math.floor(Math.random() * activeWaveforms.length)];
+
+  if (noteState[k.key]) {
+    noteOff(k.key);
+  } else {
+    noteOn(k.key, k.freq, w);
+  }
+
 }
 
 Matter.Events.on(engine, "collisionStart", event => {
@@ -108,24 +156,6 @@ Matter.Events.on(engine, "collisionStart", event => {
     }
   });
 });
-
-function toggleNote(k) {
-  if (noteState[k.key]) {
-    noteOff(k.key);
-    noteState[k.key] = false;
-    setNoteButtonState(k.key, false);
-  } else {
-    noteOn(k.key, k.freq);
-    noteState[k.key] = true;
-    setNoteButtonState(k.key, true);
-  }
-}
-
-function setNoteButtonState(key, on) {
-  const btn = document.querySelector(`.key-btn[data-key="${key}"]`);
-  if (!btn) return;
-  btn.classList.toggle("note-on", on);
-}
 
 
 /* ---------- Audio Nodes ---------- */
@@ -215,11 +245,11 @@ function yNorm() {
 }
 
 /* ---------- Note Handling ---------- */
-function noteOn(key, freq) {
+function noteOn(key, freq, waveform) {
   if (!isRunning || voices.has(key)) return;
 
   const osc = audioCtx.createOscillator();
-  osc.type = currentWaveform;
+  osc.type = waveform;
   osc.frequency.value = freq;
 
   const gain = audioCtx.createGain();
@@ -228,6 +258,8 @@ function noteOn(key, freq) {
   osc.connect(gain);
   gain.connect(master);
   lfoGain.connect(osc.frequency);
+
+  osc.start();
 
   const now = audioCtx.currentTime;
   const y = yNorm();
@@ -248,13 +280,16 @@ function noteOn(key, freq) {
     now + envParams.attack + envParams.decay
   );
 
-  osc.start();
-
   voices.set(key, {
     osc,
     gain,
-    baseFreq: freq
+    baseFreq: freq,
+    waveform
   });
+
+  noteState[key] = true;
+  setNoteButtonState(key, true);
+  setWaveformPlaying(waveform, true);
 }
 
 function noteOff(key) {
@@ -275,6 +310,13 @@ function noteOff(key) {
 
   v.osc.stop(now + rel + 0.02);
   voices.delete(key);
+
+  noteState[key] = false;
+  setNoteButtonState(key, false);
+
+  if (!isWaveformStillPlaying(v.waveform)) {
+    setWaveformPlaying(v.waveform, false);
+  }
 }
 
 function allNotesOff() {

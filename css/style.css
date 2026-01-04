@@ -33,23 +33,31 @@ select { width:133px; background: #222; color: #aaa; font-size: 12px; }
   flex-wrap: wrap;
 }
 
-.waveform-group {
+
+.waveform-buttons {
   display: flex;
-  gap: 16px;
-  align-items: flex-start;
+  gap: 10px;
 }
 
-.waveform-group label {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+.waveform-btn {
+  width: 60px;
+  height: 36px;
+  border: 1px solid #555;
+  background: #222;
+  color: #aaa;
+  cursor: pointer;
   font-size: 12px;
-  cursor: pointer;
-  gap: 4px;
 }
 
-.waveform-group input[type="radio"] {
-  cursor: pointer;
+.waveform-btn.active {
+  background: #044;
+  color: #0ff;
+}
+
+.waveform-btn.playing {
+  background: #0a4;
+  color: #fff;
+  box-shadow: 0 0 8px #0f8;
 }
 
 .key-buttons {
