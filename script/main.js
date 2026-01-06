@@ -151,8 +151,6 @@ Matter.Events.on(engine, "collisionStart", event => {
     // 左右の壁だけ反応
     if (wall.label === "wall-left" || wall.label === "wall-right") {
       triggerRandomNote();
-      // console.log('time', delayNode.delayTime.value);
-      // console.log('feedback', delayFeedback.gain.value);
     } else if (wall.label === "wall-top" || wall.label === "wall-bottom") {
       if (yAssign.value === "delay") {
         boostDelayFeedback();
@@ -177,27 +175,25 @@ let delayNode, delayFeedback, delayMixer;
 let delayBoost = false;
 let baseDelayTime = 0.3;
 let baseDelayFeedback = 0.35;
+let baseDelayMix = 0.4;
 
 
 delayTime.oninput = e => {
   if (!delayNode) return;
   baseDelayTime = parseFloat(e.target.value);
-  if (yAssign.value !== "delay") {
-    delayNode.delayTime.setTargetAtTime(baseDelayTime, audioCtx.currentTime, 0.01);
-  }
+  delayNode.delayTime.setTargetAtTime(baseDelayTime, audioCtx.currentTime, 0.01);
 };
 
 delayFb.oninput = e => {
   if (!delayFeedback) return;
   baseDelayFeedback = parseFloat(e.target.value);
-  if (yAssign.value !== "delay") {
-    delayFeedback.gain.setTargetAtTime(baseDelayFeedback, audioCtx.currentTime, 0.01);
-  }
+  delayFeedback.gain.setTargetAtTime(baseDelayFeedback, audioCtx.currentTime, 0.01);
 };
 
 delayMix.oninput = e => {
   if (!delayMixer) return;
-  delayMixer.gain.setTargetAtTime(+e.target.value, audioCtx.currentTime, 0.01);
+  baseDelayMix = parseFloat(e.target.value);
+  delayMixer.gain.setTargetAtTime(baseDelayMix, audioCtx.currentTime, 0.01);
 };
 
 function setupDelay() {
@@ -224,18 +220,9 @@ function boostDelayFeedback() {
 
   const now = audioCtx.currentTime;
 
-  delayFeedback.gain.cancelScheduledValues(now);
-
-  delayFeedback.gain.setValueAtTime(0.0, now);
-  delayFeedback.gain.linearRampToValueAtTime(
-    Math.min(baseDelayFeedback + 0.3, 0.9),
-    now + 0.01
-  );
-  delayFeedback.gain.linearRampToValueAtTime(0.0, now + 0.16);
-  //delayFeedback.gain.exponentialRampToValueAtTime(
-  //  Math.max(base, 0.001),
-  //  now + 0.25
-  //);
+  delayMixer.gain.cancelScheduledValues(now);
+  delayMixer.gain.setTargetAtTime(baseDelayMix, now, 0.05);
+  delayMixer.gain.setTargetAtTime(0.0, now + 0.05, baseDelayTime);
 }
 
 /* ---------- Helpers ---------- */
@@ -301,7 +288,6 @@ async function initAudio() {
   await audioCtx.resume();
 
   setupDelay();
-  /* start loops */
   drawLoop();
   modLoop();
   xyLoop();
@@ -395,16 +381,12 @@ yAssign.onchange = () => {
   if (!audioCtx) return;
 
   const now = audioCtx.currentTime;
-
-  delayNode.delayTime.cancelScheduledValues(now);
-  delayFeedback.gain.cancelScheduledValues(now);
+  delayMixer.gain.cancelScheduledValues(now);
 
   if (yAssign.value === "delay") {
-    delayNode.delayTime.setTargetAtTime(0.15, now, 0.05); // ← 超重要：スムージング
-    delayFeedback.gain.setTargetAtTime(0.0, now, 0.01 );
+    delayMixer.gain.setValueAtTime(0.0, now);
   } else {
-    delayNode.delayTime.setTargetAtTime(baseDelayTime, now, 0.01);
-    delayFeedback.gain.setTargetAtTime(baseDelayFeedback, now, 0.01);
+    delayMixer.gain.setValueAtTime(baseDelayMix, now);
   }
 };
 
