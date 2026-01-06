@@ -16,9 +16,9 @@ it *emerges* from motion.
 
 - Physics simulation powered by **Matter.js**
 - Polyphonic synthesizer using **Web Audio API**
-- Wall-collision–triggered generative notes
+- Side-wall-collision–triggered generative notes
 - Toggle-based **Key** and **Waveform** selectors
-- Delay feedback changes triggered by wall collisions
+- Delay feedback changes triggered by top and bottom wall collisions
 - Oscilloscope, FFT spectrum, and XY (Lissajous) visualizations
 - Fully generative and non-deterministic sound behavior
 
