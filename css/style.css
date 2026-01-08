@@ -108,7 +108,7 @@ select { width:133px; background: #222; color: #aaa; font-size: 12px; }
   width: 600px;
   height: 400px;
   gap:6px;
-  margin-top:8px;
+  margin-top:20px;
 }
 
 .canvasA { background:#000; border:1px solid #333; display:block; }
