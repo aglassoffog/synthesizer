@@ -1,11 +1,9 @@
-/* ===============================
-   main.js
-   =============================== */
-
 /* ---------- Global State ---------- */
 let audioCtx = null;
 let isRunning = false;
-let currentWaveform = "sine";
+
+/* Poly voices */
+const voices = new Map();
 
 /* ADSR Envelope Parameters */
 const envParams = {
@@ -14,32 +12,6 @@ const envParams = {
   sustain: 0.7,
   release: 0.2
 };
-
-/* Poly voices */
-const voices = new Map();
-
-/* ---------- DOM ---------- */
-const startBtn = document.getElementById("startBtn");
-const yAssign  = document.getElementById("yAssign");
-
-/* ADSR sliders */
-const attack  = document.getElementById("attack");
-const decay   = document.getElementById("decay");
-const sustain = document.getElementById("sustain");
-const release = document.getElementById("release");
-
-
-const ballSizeSlider = document.getElementById("ballSize");
-const ballSizeVal = document.getElementById("ballSizeVal");
-
-ballSizeSlider.addEventListener("input", e => {
-  const size = Number(e.target.value);
-  ballSizeVal.textContent = size;
-
-  setBallRadius(size);
-});
-
-const keyButtonsEl = document.getElementById("keyButtons");
 
 const KEY_LIST = [
   { name: "C", key: "c", freq: 261.63 },
@@ -52,21 +24,13 @@ const KEY_LIST = [
 ];
 
 const waveformTypes = ["sine", "square", "sawtooth", "triangle"];
-
-const waveformStates = {
-  sine: true,
-  square: false,
-  sawtooth: false,
-  triangle: false
-};
-
-
 const keyState = {};
-const noteState = {}; // note on/off
+const noteState = {};
+const waveformStates = [];
 
 document.querySelectorAll(".key-btn").forEach(btn => {
   const key = btn.dataset.key;
-  keyState[key] = key === 'c'; // Cのみtrue
+  keyState[key] = key === 'c';
   noteState[key] = false;
 
   btn.onclick = () => {
@@ -79,10 +43,12 @@ document.querySelectorAll(".key-btn").forEach(btn => {
 });
 
 document.querySelectorAll(".waveform-btn").forEach(btn => {
+  const type = btn.dataset.waveform;
+  waveformStates[type] = type === "sine";
   btn.onclick = () => {
-    const type = btn.dataset.waveform;
 
     // 発音中ならその波形全て note off して無効化
+    const w = waveformStates.find(w => w.type === type);
     if (waveformStates[type]) {
       voices.forEach((v, key) => {
         if (v.waveform === type) {
@@ -103,9 +69,9 @@ function setNoteButtonState(key, on) {
 }
 
 function setWaveformPlaying(type, playing) {
-  document
-    .querySelector(`.waveform-btn[data-waveform="${type}"]`)
-    ?.classList.toggle("playing", playing);
+  const btn = document.querySelector(`.waveform-btn[data-waveform="${type}"]`);
+  if (!btn) return;
+  btn.classList.toggle("playing", playing);
 }
 
 function isWaveformStillPlaying(type) {
@@ -162,7 +128,9 @@ Matter.Events.on(engine, "collisionStart", event => {
 
 
 /* ---------- Audio Nodes ---------- */
-let master, analyser, lfo, lfoGain;
+let master, filter, filterGain, bypassGain;
+let analyser, lfo, lfoGain;
+let baseFilterFreq = 6000;
 
 /* ---------- Envelope ---------- */
 attack.oninput  = e => envParams.attack  = +e.target.value;
@@ -172,11 +140,9 @@ release.oninput = e => envParams.release = +e.target.value;
 
 /* ---------- Delay ---------- */
 let delayNode, delayFeedback, delayMixer;
-let delayBoost = false;
 let baseDelayTime = 0.3;
 let baseDelayFeedback = 0.35;
 let baseDelayMix = 0.4;
-
 
 delayTime.oninput = e => {
   if (!delayNode) return;
@@ -196,6 +162,40 @@ delayMix.oninput = e => {
   delayMixer.gain.setTargetAtTime(baseDelayMix, audioCtx.currentTime, 0.01);
 };
 
+filterType.onchange = e => {
+  if (!filter) return;
+  const now = audioCtx.currentTime;
+  filterGain.gain.cancelScheduledValues(now);
+  bypassGain.gain.cancelScheduledValues(now);
+  if (e.target.value === "off"){
+    filterGain.gain.setTargetAtTime(0, now, 0.01);
+    bypassGain.gain.setTargetAtTime(1, now, 0.01);
+  }else{
+    filter.type = e.target.value;
+    filterGain.gain.setTargetAtTime(1, now, 0.01);
+    bypassGain.gain.setTargetAtTime(0, now, 0.01);
+  }
+};
+
+filterFreq.oninput = e => {
+  if (!filter) return;
+  baseFilterFreq = +e.target.value;
+  filter.frequency.setTargetAtTime(baseFilterFreq, audioCtx.currentTime, 0.01);
+};
+
+filterQ.oninput = e => {
+  if (!filter) return;
+  filter.Q.setTargetAtTime(+e.target.value, audioCtx.currentTime, 0.01);
+};
+
+function boostDelayFeedback() {
+  if (!audioCtx || !delayMixer) return;
+  const now = audioCtx.currentTime;
+  delayMixer.gain.cancelScheduledValues(now);
+  delayMixer.gain.setTargetAtTime(baseDelayMix, now, 0.05);
+  delayMixer.gain.setTargetAtTime(0.0, now + 0.05, baseDelayTime);
+}
+
 function setupDelay() {
   delayNode = audioCtx.createDelay(2.0);
   delayNode.delayTime.value = baseDelayTime;
@@ -204,7 +204,7 @@ function setupDelay() {
   delayFeedback.gain.value = baseDelayFeedback;
 
   delayMixer = audioCtx.createGain();
-  delayMixer.gain.value = 0.4;
+  delayMixer.gain.value = baseDelayMix;
 
   // feedback loop
   delayNode.connect(delayFeedback);
@@ -213,70 +213,10 @@ function setupDelay() {
   // wet → mix
   delayNode.connect(delayMixer);
   delayMixer.connect(master);
+
+  filterGain.connect(delayNode);
+  bypassGain.connect(delayNode);
 }
-
-function boostDelayFeedback() {
-  if (!audioCtx || !delayMixer) return;
-
-  const now = audioCtx.currentTime;
-
-  delayMixer.gain.cancelScheduledValues(now);
-  delayMixer.gain.setTargetAtTime(baseDelayMix, now, 0.05);
-  delayMixer.gain.setTargetAtTime(0.0, now + 0.05, baseDelayTime);
-}
-
-/* ---------- Helpers ---------- */
-function yNorm() {
-  return Math.min(Math.max(ball.position.y / 400, 0), 1);
-}
-
-/* ---------- Modulation Loop ---------- */
-function modLoop() {
-  if (!audioCtx) return;
-
-  const y = yNorm();
-
-  if (yAssign.value === "pitch") {
-    voices.forEach(v => {
-        v.osc.frequency.setValueAtTime(
-          v.baseFreq * Math.pow(2, 0.5 - y),
-          audioCtx.currentTime
-        );
-    });
-  }
-  else if (yAssign.value === "vibrato") {
-    lfoGain.gain.value = y * 20;
-  }
-
-  requestAnimationFrame(modLoop);
-}
-
-yAssign.onchange = () => {
-  if (!audioCtx) return;
-
-  const now = audioCtx.currentTime;
-
-  if (yAssign.value !== "pitch") {
-    voices.forEach(v => {
-      v.osc.frequency.setValueAtTime(
-        v.baseFreq,
-        now
-      );
-    });
-  }
-
-  if (yAssign.value !== "vibrato") {
-      lfoGain.gain.value = 0;
-  }
-
-  if (yAssign.value === "delay") {
-    delayMixer.gain.cancelScheduledValues(now);
-    delayMixer.gain.setValueAtTime(0.0, now);
-  } else {
-    delayMixer.gain.cancelScheduledValues(now);
-    delayMixer.gain.setValueAtTime(baseDelayMix, now);
-  }
-};
 
 /* ---------- Audio Init ---------- */
 async function initAudio() {
@@ -286,6 +226,20 @@ async function initAudio() {
 
   master = audioCtx.createGain();
   master.gain.value = 0.25;
+
+  filter = audioCtx.createBiquadFilter();
+  filter.type = "lowpass";
+  filter.frequency.value = baseFilterFreq;
+  filter.Q.value = 0.7;
+
+  filterGain = audioCtx.createGain();
+  filterGain.gain.value = 1;
+  bypassGain = audioCtx.createGain();
+  bypassGain.gain.value = 0;
+
+  filter.connect(filterGain);
+  filterGain.connect(master);
+  bypassGain.connect(master);
 
   analyser = audioCtx.createAnalyser();
   analyser.fftSize = 2048;
@@ -313,6 +267,60 @@ async function initAudio() {
 
 }
 
+/* ---------- Helpers ---------- */
+function yNorm() {
+  return Math.min(Math.max(ball.position.y / 400, 0), 1);
+}
+
+/* ---------- Modulation Loop ---------- */
+function modLoop() {
+  if (!audioCtx) return;
+
+  const y = yNorm();
+  const now = audioCtx.currentTime;
+
+  if (yAssign.value === "pitch") {
+    voices.forEach(v => {
+        v.osc.frequency.setValueAtTime(v.baseFreq * Math.pow(2, 0.5 - y), now);
+    });
+  }
+  else if (yAssign.value === "vibrato") {
+    lfoGain.gain.value = y * 20;
+  }
+  else if (yAssign.value === "filter") {
+    const cutoff = 300 + (1 - y) * 8000;
+    filter.frequency.setTargetAtTime(cutoff, now, 0.02);
+  }
+  requestAnimationFrame(modLoop);
+}
+
+yAssign.onchange = () => {
+  if (!audioCtx) return;
+
+  const now = audioCtx.currentTime;
+
+  if (yAssign.value !== "pitch") {
+    voices.forEach(v => {
+      v.osc.frequency.setValueAtTime(v.baseFreq, now);
+    });
+  }
+
+  if (yAssign.value !== "vibrato") {
+      lfoGain.gain.value = 0;
+  }
+
+  if (yAssign.value !== "filter") {
+    filter.frequency.setValueAtTime(baseFilterFreq, now);
+  }
+
+  if (yAssign.value === "delay") {
+    delayMixer.gain.cancelScheduledValues(now);
+    delayMixer.gain.setValueAtTime(0.0, now);
+  } else {
+    delayMixer.gain.cancelScheduledValues(now);
+    delayMixer.gain.setValueAtTime(baseDelayMix, now);
+  }
+};
 
 /* ---------- Note Handling ---------- */
 function noteOn(key, freq, waveform) {
@@ -322,12 +330,12 @@ function noteOn(key, freq, waveform) {
   osc.type = waveform;
   osc.frequency.value = freq;
 
-  const gain = audioCtx.createGain();
-  gain.gain.value = 0;
+  const env = audioCtx.createGain();
+  env.gain.value = 0;
 
-  osc.connect(gain);
-  gain.connect(master);
-  gain.connect(delayNode);
+  osc.connect(env);
+  env.connect(filter);
+  env.connect(bypassGain);
   lfoGain.connect(osc.frequency);
 
   osc.start();
@@ -340,20 +348,20 @@ function noteOn(key, freq, waveform) {
       ? (0.3 + y * 0.7)
       : 1;
 
-  gain.gain.cancelScheduledValues(now);
-  gain.gain.setValueAtTime(0, now);
-  gain.gain.linearRampToValueAtTime(
+  env.gain.cancelScheduledValues(now);
+  env.gain.setValueAtTime(0, now);
+  env.gain.linearRampToValueAtTime(
     envAmount,
     now + envParams.attack
   );
-  gain.gain.linearRampToValueAtTime(
+  env.gain.linearRampToValueAtTime(
     envAmount * envParams.sustain,
     now + envParams.attack + envParams.decay
   );
 
   voices.set(key, {
     osc,
-    gain,
+    env,
     baseFreq: freq,
     waveform
   });
@@ -375,9 +383,9 @@ function noteOff(key) {
       ? envParams.release * (0.3 + y)
       : envParams.release;
 
-  v.gain.gain.cancelScheduledValues(now);
-  v.gain.gain.setValueAtTime(v.gain.gain.value, now);
-  v.gain.gain.linearRampToValueAtTime(0, now + rel);
+  v.env.gain.cancelScheduledValues(now);
+  v.env.gain.setValueAtTime(v.env.gain.value, now);
+  v.env.gain.linearRampToValueAtTime(0, now + rel);
 
   v.osc.stop(now + rel + 0.02);
   voices.delete(key);
@@ -430,4 +438,11 @@ window.addEventListener("keydown", (e) => {
     if (!isRunning) return;
     randomKickBall();
   }
+});
+
+ballSize.addEventListener("input", e => {
+  const size = Number(e.target.value);
+  ballSizeVal.textContent = size;
+
+  setBallRadius(size);
 });
