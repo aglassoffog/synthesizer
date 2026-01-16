@@ -230,9 +230,12 @@ async function initAudio() {
   analyser = audioCtx.createAnalyser();
   analyser.fftSize = 2048;
   analyser.smoothingTimeConstant = 0.8;
-
   master.connect(analyser);
-  analyser.connect(audioCtx.destination);
+
+  const destination = audioCtx.createMediaStreamDestination();
+  audioEl.srcObject = destination.stream;
+  audioEl.play();
+  analyser.connect(destination);
 
   /* LFO */
   lfo = audioCtx.createOscillator();
