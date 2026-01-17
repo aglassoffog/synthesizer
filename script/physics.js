@@ -168,9 +168,6 @@ function randomKickBall() {
   const maxSpin = 0.1;
   const spin = (Math.random() * 2 - 1) * maxSpin;
 
-  console.log("randomKickBall",angle, spin);
-  console.log(ball.angle, ball.angularVelocity);
-
   Body.setVelocity(ball, { x: 0, y: 0 });
   Body.setAngularVelocity(ball, spin);
 
