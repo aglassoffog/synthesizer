@@ -156,36 +156,46 @@ function toggleCell(gx, gy) {
 let isDragging = false;
 let touchedCells = new Set();
 
-worldCanvas.addEventListener("mousedown", e => {
+worldCanvas.addEventListener("pointerdown", e => {
+  e.preventDefault();
   isDragging = true;
   touchedCells.clear();
   handleCell(e);
 });
 
-worldCanvas.addEventListener("mousemove", e => {
+worldCanvas.addEventListener("pointermove", e => {
   if (!isDragging) return;
   handleCell(e);
 });
 
-window.addEventListener("mouseup", () => {
+window.addEventListener("pointerup", () => {
   isDragging = false;
 });
 
-worldCanvas.addEventListener("mouseleave", () => {
+worldCanvas.addEventListener("pointercancel", () => {
   isDragging = false;
 });
+
+function getCanvasPos(e) {
+  const rect = worldCanvas.getBoundingClientRect();
+  return {
+    x: (e.clientX - rect.left) * (WORLD_W / rect.width),
+    y: (e.clientY - rect.top) * (WORLD_H / rect.height)
+  };
+}
 
 function handleCell(e) {
-  const rect = worldCanvas.getBoundingClientRect();
-  const mx = e.clientX - rect.left;
-  const my = e.clientY - rect.top;
-  if (mx < FFT_W) return;
-  if (mx > WORLD_W) return;
-  if (my < 0) return;
-  if (my > WORLD_H) return;
+  // const rect = worldCanvas.getBoundingClientRect();
+  // const mx = e.clientX - rect.left;
+  // const my = e.clientY - rect.top;
+  const pos = getCanvasPos(e);
+  if (pos.x < FFT_W) return;
+  if (pos.x > WORLD_W) return;
+  if (pos.y < 0) return;
+  if (pos.y > WORLD_H) return;
 
-  const gx = Math.floor((mx - FFT_W) / cellW);
-  const gy = Math.floor(my / cellH);
+  const gx = Math.floor((pos.x - FFT_W) / cellW);
+  const gy = Math.floor(pos.y / cellH);
   const key = `${gx},${gy}`;
   if (touchedCells.has(key)) return;
   // touchedCells.clear();
