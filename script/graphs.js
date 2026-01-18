@@ -7,7 +7,7 @@ const xyCtx = xy.getContext("2d");
 let timeData = new Float32Array(2048);
 let freqData = new Uint8Array(1024);
 let xyData = new Float32Array(2048);
-let xyOffset = 32;
+let xyOffset = 64;
 
 const triggerLevel = 0;
 const samplesToDraw = 280;
