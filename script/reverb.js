@@ -1,13 +1,11 @@
-function createReverb() {
+function createReverb(){
   const input = audioCtx.createGain();
-
-  const convolver = audioCtx.createConvolver();
-  const wetGain = audioCtx.createGain();
   const dryGain = audioCtx.createGain();
-
+  const wetGain = audioCtx.createGain();
+  const convolver = audioCtx.createConvolver();
   const tone = audioCtx.createBiquadFilter();
-  tone.type = "lowpass";
-  tone.frequency.value = 6000;
+  const output = audioCtx.createGain();
+
 
   input.connect(dryGain);
   input.connect(convolver);
@@ -15,13 +13,16 @@ function createReverb() {
   convolver.connect(tone);
   tone.connect(wetGain);
 
+  dryGain.connect(output);
+  wetGain.connect(output);
+
   return {
     input,
-    output: audioCtx.createGain(),
-    convolver,
-    wetGain,
     dryGain,
-    tone
+    convolver,
+    tone,
+    wetGain,
+    output
   };
 }
 
@@ -68,25 +69,14 @@ function generateHallImpulse(duration = 4, decay = 3) {
 function setupReverb(){
   reverb = createReverb();
 
-  reverb.convolver.buffer = generateHallImpulse(4, 2);
+  reverb.convolver.buffer = generateHallImpulse(baseReverbDecay, 2);
 
-  reverb.dryGain.gain.value = 0.6;
-  reverb.wetGain.gain.value = 0.4;
-
-  reverb.tone.frequency.value = 4500;
+  reverb.tone.type = "lowpass";
+  reverb.wetGain.gain.value = baseReverbSend;
+  reverb.tone.frequency.value = baseReverbTone;
 
   // 出力
   reverb.output.connect(master);
-
-  // dry / wet 合流
-  reverb.dryGain.connect(reverb.output);
-  reverb.wetGain.connect(reverb.output);
-}
-
-function setReverbMix(v) {
-  // v: 0.0〜1.0
-  reverb.wetGain.gain.value = v;
-  reverb.dryGain.gain.value = 1 - v;
 }
 
 function setReverbDecay(v) {
@@ -101,4 +91,9 @@ function setReverbTone(freq) {
     audioCtx.currentTime,
     0.3
   );
+}
+
+function setReverbSend(v) {
+  // v: 0.0〜1.0
+  reverb.wetGain.gain.value = v;
 }

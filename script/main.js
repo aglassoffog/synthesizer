@@ -116,16 +116,22 @@ function onSideWallCollision(wall){
 
 /* ---------- Audio Nodes ---------- */
 let master, filter, filterGain, bypassGain;
-let reverb;
+let delay, reverb;
 let analyser, lfo, lfoGain;
 let baseFilterFreq = 6000;
+let baseDelayTime = 0.3;
+let baseDelayFeedback = 0.35;
+let baseDelaySend = 0.4;
+let baseReverbDecay = 4;
+let baseReverbTone = 4500;
+let baseReverbSend = 0.4;
+
 
 /* ---------- Envelope ---------- */
 attack.oninput  = e => envParams.attack  = +e.target.value;
 decay.oninput   = e => envParams.decay   = +e.target.value;
 sustain.oninput = e => envParams.sustain = +e.target.value;
 release.oninput = e => envParams.release = +e.target.value;
-
 
 /* ---------- Filter ---------- */
 filterType.onchange = e => {
@@ -155,80 +161,42 @@ filterQ.oninput = e => {
 };
 
 /* ---------- Delay ---------- */
-let delayNode, delayFeedback, delayMixer;
-let baseDelayTime = 0.3;
-let baseDelayFeedback = 0.35;
-let baseDelayMix = 0.4;
-
 delayTime.oninput = e => {
-  if (!delayNode) return;
   baseDelayTime = parseFloat(e.target.value);
-  delayNode.delayTime.setTargetAtTime(baseDelayTime, audioCtx.currentTime, 0.01);
+  if (!delay) return;
+  setDelayTime(baseDelayTime);
 };
 
 delayFb.oninput = e => {
-  if (!delayFeedback) return;
   baseDelayFeedback = parseFloat(e.target.value);
-  delayFeedback.gain.setTargetAtTime(baseDelayFeedback, audioCtx.currentTime, 0.01);
+  if (!delay) return;
+  setDelayFeedback(baseDelayFeedback);
 };
 
-delayMix.oninput = e => {
-  if (!delayMixer) return;
-  baseDelayMix = parseFloat(e.target.value);
-  delayMixer.gain.setTargetAtTime(baseDelayMix, audioCtx.currentTime, 0.01);
+delaySend.oninput = e => {
+  baseDelaySend = parseFloat(e.target.value);
+  if (!delay) return;
+  setDelaySend(baseDelaySend);
 };
 
 /* ---------- Reverb ---------- */
-reverbMix.addEventListener("input", e => {
-  const v = parseFloat(e.target.value);
-  reverb.wetGain.gain.value = v;
-  reverb.dryGain.gain.value = 1 - v;
-});
-
 reverbDecay.addEventListener("change", e => {
-  const v = parseFloat(e.target.value);
-  reverb.convolver.buffer = generateHallImpulse(v, 3);
+  baseReverbDecay = parseFloat(e.target.value);
+  if (!reverb) return;
+  setReverbDecay(baseReverbDecay);
 });
 
 reverbTone.addEventListener("input", e => {
-  reverb.tone.frequency.setTargetAtTime(
-    parseFloat(e.target.value),
-    audioCtx.currentTime,
-    0.2
-  );
+  baseReverbTone = parseFloat(e.target.value);
+  if (!reverb) return;
+  setReverbTone(baseReverbTone);
 });
 
-
-
-function boostDelayFeedback() {
-  if (!audioCtx || !delayMixer) return;
-  const now = audioCtx.currentTime;
-  delayMixer.gain.cancelScheduledValues(now);
-  delayMixer.gain.setTargetAtTime(baseDelayMix, now, 0.05);
-  delayMixer.gain.setTargetAtTime(0.0, now + 0.05, baseDelayTime);
-}
-
-function setupDelay() {
-  delayNode = audioCtx.createDelay(2.0);
-  delayNode.delayTime.value = baseDelayTime;
-
-  delayFeedback = audioCtx.createGain();
-  delayFeedback.gain.value = baseDelayFeedback;
-
-  delayMixer = audioCtx.createGain();
-  delayMixer.gain.value = baseDelayMix;
-
-  // feedback loop
-  delayNode.connect(delayFeedback);
-  delayFeedback.connect(delayNode);
-
-  // wet → mix
-  delayNode.connect(delayMixer);
-  delayMixer.connect(reverb.input);
-
-  filterGain.connect(delayNode);
-  bypassGain.connect(delayNode);
-}
+reverbSend.addEventListener("input", e => {
+  baseReverbSend = parseFloat(e.target.value);
+  if (!reverb) return;
+  setReverbSend(baseReverbSend);
+});
 
 /* ---------- Audio Init ---------- */
 async function initAudio() {
@@ -248,13 +216,13 @@ async function initAudio() {
   filterGain.gain.value = 1;
   bypassGain = audioCtx.createGain();
   bypassGain.gain.value = 0;
+  filter.connect(filterGain);
 
   setupReverb();
+  setupDelay();
 
-  
-  filter.connect(filterGain);
-  filterGain.connect(reverb.input);
-  bypassGain.connect(reverb.input);
+  filterGain.connect(delay.input);
+  bypassGain.connect(delay.input);
 
   analyser = audioCtx.createAnalyser();
   analyser.fftSize = 2048;
@@ -278,7 +246,6 @@ async function initAudio() {
 
   await audioCtx.resume();
 
-  setupDelay();
   drawLoop();
   modLoop();
 }
@@ -327,11 +294,11 @@ yAssign.onchange = () => {
   }
 
   if (yAssign.value === "delay") {
-    delayMixer.gain.cancelScheduledValues(now);
-    delayMixer.gain.setValueAtTime(0.0, now);
+    delay.wetGain.gain.cancelScheduledValues(now);
+    delay.wetGain.gain.setValueAtTime(0.0, now);
   } else {
-    delayMixer.gain.cancelScheduledValues(now);
-    delayMixer.gain.setValueAtTime(baseDelayMix, now);
+    delay.wetGain.gain.cancelScheduledValues(now);
+    delay.wetGain.gain.setValueAtTime(baseDelaySend, now);
   }
 };
 
@@ -425,7 +392,7 @@ startBtn.onclick = async () => {
     startBtn.textContent = "STOP";
     startBtn.classList.toggle("active", true);
 
-    if (delayFeedback) delayFeedback.gain.value = baseDelayFeedback;
+    if (delay) setDelayFeedback(baseDelayFeedback);
 
     randomKickBall();
 
@@ -442,7 +409,8 @@ startBtn.onclick = async () => {
 
     allNotesOff();
     stopBall();
-    if (delayFeedback) delayFeedback.gain.value = 0;
+
+    if (delay) setDelayFeedback(0);
 
     if (wakeLock) {
       wakeLock.release();
