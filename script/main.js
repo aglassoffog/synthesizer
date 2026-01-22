@@ -218,11 +218,11 @@ async function initAudio() {
   bypassGain.gain.value = 0;
   filter.connect(filterGain);
 
-  setupReverb();
   setupDelay();
+  setupReverb();
 
-  filterGain.connect(delay.input);
-  bypassGain.connect(delay.input);
+  filterGain.connect(reverb.input);
+  bypassGain.connect(reverb.input);
 
   analyser = audioCtx.createAnalyser();
   analyser.fftSize = 2048;

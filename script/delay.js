@@ -33,7 +33,7 @@ function setupDelay(){
   delay.feedback.gain.value = baseDelayFeedback;
   delay.wetGain.gain.value = baseDelaySend;
 
-  delay.output.connect(reverb.input);
+  delay.output.connect(master);
 }
 
 function setDelayTime(v){
