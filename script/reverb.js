@@ -165,20 +165,21 @@ function setupReverb(){
 }
 
 function setReverbDecay(v) {
-  // v: 0.5〜5.0
   reverb.convolver.buffer = generateImpulse(v, 3);
 }
 
-function setReverbTone(freq) {
-  // 800〜8000
+function setReverbTone(v) {
   reverb.tone.frequency.setTargetAtTime(
-    freq,
+    v,
     audioCtx.currentTime,
     0.3
   );
 }
 
 function setReverbSend(v) {
-  // v: 0.0〜1.0
-  reverb.wetGain.gain.value = v;
+  reverb.wetGain.gain.setTargetAtTime(
+    v,
+    audioCtx.currentTime,
+    0.01
+  );
 }

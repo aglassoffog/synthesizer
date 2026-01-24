@@ -429,9 +429,6 @@ function drawPhysics(){
   posY.textContent = ball.position.y.toFixed(1);
 }
 
-const gravitySlider = document.getElementById("gravity");
-const gravityVal = document.getElementById("gravityVal");
-gravitySlider.oninput = e=>{
-  engine.gravity.y = +e.target.value;
-  gravityVal.textContent = (+e.target.value).toFixed(2);
-};
+function setGravity(v){
+  engine.gravity.y = v;
+}

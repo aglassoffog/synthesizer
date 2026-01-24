@@ -45,13 +45,14 @@ function setDelayFeedback(v){
 }
 
 function setDelaySend(v){
-  delay.wetGain.gain.setTargetAtTime(v, audioCtx.currentTime, 0.01);
+  const now = audioCtx.currentTime;
+  delay.wetGain.gain.cancelScheduledValues(now);
+  delay.wetGain.gain.setTargetAtTime(v, now, 0.01);
 }
 
 function boostDelayFeedback() {
-  if (!audioCtx || !delay) return;
   const now = audioCtx.currentTime;
   delay.wetGain.gain.cancelScheduledValues(now);
-  delay.wetGain.gain.setTargetAtTime(baseDelaySend, now, 0.05);
-  delay.wetGain.gain.setTargetAtTime(0.0, now + 0.05, baseDelayTime);
+  delay.wetGain.gain.setTargetAtTime(baseDelaySend, now, 0.01);
+  delay.wetGain.gain.setTargetAtTime(0.0, now + 0.01, baseDelayTime);
 }

@@ -98,7 +98,6 @@ function triggerRandomNote() {
   } else {
     noteOn(k.key, k.freq, w);
   }
-
 }
 
 function onSideWallCollision(wall){
@@ -115,10 +114,12 @@ function onSideWallCollision(wall){
 
 
 /* ---------- Audio Nodes ---------- */
-let master, filter, filterGain, bypassGain;
-let delay, reverb;
+let master;
+let filter, delay, reverb;
 let analyser, lfo, lfoGain;
+let baseFilterType = "lowpass";
 let baseFilterFreq = 6000;
+let baseFilterQ = 0.7;
 let baseDelayTime = 0.3;
 let baseDelayFeedback = 0.35;
 let baseDelaySend = 0.4;
@@ -135,29 +136,21 @@ release.oninput = e => envParams.release = +e.target.value;
 
 /* ---------- Filter ---------- */
 filterType.onchange = e => {
+  baseFilterType = e.target.value;
   if (!filter) return;
-  const now = audioCtx.currentTime;
-  filterGain.gain.cancelScheduledValues(now);
-  bypassGain.gain.cancelScheduledValues(now);
-  if (e.target.value === "off"){
-    filterGain.gain.setTargetAtTime(0, now, 0.01);
-    bypassGain.gain.setTargetAtTime(1, now, 0.01);
-  }else{
-    filter.type = e.target.value;
-    filterGain.gain.setTargetAtTime(1, now, 0.01);
-    bypassGain.gain.setTargetAtTime(0, now, 0.01);
-  }
+  setFilterType(baseFilterType);
 };
 
 filterFreq.oninput = e => {
+  baseFilterFreq = parseInt(e.target.value);
   if (!filter) return;
-  baseFilterFreq = Number(e.target.value);
-  filter.frequency.setTargetAtTime(baseFilterFreq, audioCtx.currentTime, 0.01);
+  setFilterFreq(baseFilterFreq);
 };
 
 filterQ.oninput = e => {
+  baseFilterQ = parseFloat(e.target.value);
   if (!filter) return;
-  filter.Q.setTargetAtTime(+e.target.value, audioCtx.currentTime, 0.01);
+  setFilterQ(baseFilterQ);
 };
 
 /* ---------- Delay ---------- */
@@ -180,23 +173,36 @@ delaySend.oninput = e => {
 };
 
 /* ---------- Reverb ---------- */
-reverbDecay.addEventListener("change", e => {
+reverbDecay.onchange = e => {
   baseReverbDecay = parseFloat(e.target.value);
   if (!reverb) return;
   setReverbDecay(baseReverbDecay);
-});
+};
 
-reverbTone.addEventListener("input", e => {
-  baseReverbTone = parseFloat(e.target.value);
+reverbTone.oninput = e => {
+  baseReverbTone = parseInt(e.target.value);
   if (!reverb) return;
   setReverbTone(baseReverbTone);
-});
+};
 
-reverbSend.addEventListener("input", e => {
+reverbSend.oninput = e => {
   baseReverbSend = parseFloat(e.target.value);
   if (!reverb) return;
   setReverbSend(baseReverbSend);
-});
+};
+
+/* ---------- Physics ---------- */
+gravity.oninput = e => {
+  const g = parseFloat(e.target.value);
+  gravityVal.textContent = g.toFixed(2);
+  setGravity(g);
+};
+
+ballSize.oninput = e => {
+  const size = parseFloat(e.target.value);
+  ballSizeVal.textContent = size;
+  setBallRadius(size);
+};
 
 /* ---------- Audio Init ---------- */
 async function initAudio() {
@@ -207,22 +213,9 @@ async function initAudio() {
   master = audioCtx.createGain();
   master.gain.value = 0.25;
 
-  filter = audioCtx.createBiquadFilter();
-  filter.type = "lowpass";
-  filter.frequency.value = baseFilterFreq;
-  filter.Q.value = 0.7;
-
-  filterGain = audioCtx.createGain();
-  filterGain.gain.value = 1;
-  bypassGain = audioCtx.createGain();
-  bypassGain.gain.value = 0;
-  filter.connect(filterGain);
-
   setupDelay();
   setupReverb();
-
-  filterGain.connect(reverb.input);
-  bypassGain.connect(reverb.input);
+  setupFilter();
 
   analyser = audioCtx.createAnalyser();
   analyser.fftSize = 2048;
@@ -269,7 +262,7 @@ function modLoop() {
   }
   else if (yAssign.value === "filter") {
     const cutoff = 200 + (1 - y) * 12000;
-    filter.frequency.setTargetAtTime(cutoff, now, 0.02);
+    setFilterFreq(cutoff);
   }
   requestAnimationFrame(modLoop);
 }
@@ -290,15 +283,13 @@ yAssign.onchange = () => {
   }
 
   if (yAssign.value !== "filter") {
-    filter.frequency.setValueAtTime(baseFilterFreq, now);
+    setFilterFreq(baseFilterFreq);
   }
 
   if (yAssign.value === "delay") {
-    delay.wetGain.gain.cancelScheduledValues(now);
-    delay.wetGain.gain.setValueAtTime(0.0, now);
+    setDelaySend(0.0);
   } else {
-    delay.wetGain.gain.cancelScheduledValues(now);
-    delay.wetGain.gain.setValueAtTime(baseDelaySend, now);
+    setDelaySend(baseDelaySend);
   }
 };
 
@@ -314,8 +305,7 @@ function noteOn(key, freq, waveform) {
   env.gain.value = 0;
 
   osc.connect(env);
-  env.connect(filter);
-  env.connect(bypassGain);
+  env.connect(filter.input);
   lfoGain.connect(osc.frequency);
 
   osc.start();
@@ -428,11 +418,4 @@ window.addEventListener("keydown", (e) => {
 
     randomKickBall();
   }
-});
-
-ballSize.addEventListener("input", e => {
-  const size = Number(e.target.value);
-  ballSizeVal.textContent = size;
-
-  setBallRadius(size);
 });
