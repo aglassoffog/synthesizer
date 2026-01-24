@@ -46,10 +46,12 @@ function createReverb(){
   const tone = audioCtx.createBiquadFilter();
   const output = audioCtx.createGain();
 
+  // const preDelay = audioCtx.createDelay(0.1); // 最大100ms
+  // preDelay.delayTime.value = 0.04;       // 初期値 20ms
 
   input.connect(dryGain);
   input.connect(convolver);
-
+  // preDelay.connect(convolver);
   convolver.connect(tone);
   tone.connect(wetGain);
 

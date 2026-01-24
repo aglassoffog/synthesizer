@@ -1,16 +1,19 @@
 const { Engine, Render, World, Bodies, Body, Runner } = Matter;
 const WORLD_W = worldCanvas.width, WORLD_H = worldCanvas.height;
-const HOLE_W = 248, HOLE_H = 720;
+const HOLE_W = 248, HOLE_H = WORLD_H;
 const FFT_W = WORLD_W - HOLE_W, FFT_H = 220;
 const BALL_SPEED = 5;
 let ballRadius = 13;
 const obstacleRadius = 4;
-const GRID_X = 14;
-const GRID_Y = 40;
+const GRID_X = FFT_W + 30;
+const GRID_W = 140;
+const GRID_XC = 10;
+const GRID_YC = 42;
+const angleRad = Math.PI/15;
 const gridObstacles = new Map();
 const wctx = worldCanvas.getContext("2d");
-const cellW = HOLE_W / GRID_X;
-const cellH = HOLE_H / GRID_Y;
+const cellW = GRID_W / GRID_XC;
+const cellH = HOLE_H / GRID_YC;
 
 const engine = Engine.create();
 engine.gravity.y = 0;
@@ -76,13 +79,50 @@ const wallBottom = Bodies.rectangle(
   }
 );
 
+const leftSlope = Matter.Bodies.fromVertices(
+  FFT_W + 35,
+  (HOLE_H-FFT_H)/2 - 85,
+  [
+    { x: 0,   y: -((HOLE_H-FFT_H)/2)+6},
+    { x: 104,  y: -((HOLE_H-FFT_H)/2)+6},
+    { x: 0, y: (HOLE_H-FFT_H)/2 }
+  ],
+  {
+    isStatic: true,
+    label: "wall-left",
+    render: {visible: false},
+    visible: false,
+    restitution: 0.85
+  },
+  true
+);
+
+const rightSlope = Matter.Bodies.fromVertices(
+  WORLD_W - 50,
+  HOLE_H/2 + 120,
+  [
+    { x: 0,   y: -(HOLE_H/2)},
+    { x: 0,  y: HOLE_H/2-1},
+    { x: -154, y: HOLE_H/2-1 }
+  ],
+  {
+    isStatic: true,
+    label: "wall-right",
+    render: {visible: false},
+    restitution: 0.85
+  },
+  true
+);
+
 World.add(engine.world, [
   ball,
   wallLeft,
   wallLeft2,
   wallRight,
   wallTop,
-  wallBottom
+  wallBottom,
+  leftSlope,
+  rightSlope
 ]);
 
 function toggleCell(gx, gy) {
@@ -96,10 +136,19 @@ function toggleCell(gx, gy) {
     return;
   }
 
+  const cx = (gx * cellW) + (cellW / 2) + GRID_X;
+  const cy = (gy * cellH) + (cellH / 2);
+
+  const dx = cx - (FFT_W+HOLE_W/2);
+  const dy = cy - (HOLE_H/2);
+
+  const cos = Math.cos(angleRad);
+  const sin = Math.sin(angleRad);
+
   // 新しく障害物を作る
   const body = Bodies.circle(
-    (gx * cellW) + (cellW / 2) + FFT_W,
-    (gy * cellH) + (cellH / 2),
+    dx * cos - dy * sin + HOLE_W/2 + FFT_W,
+    dx * sin + dy * cos + HOLE_H/2,
     obstacleRadius,
     {
       isStatic: true, label: "obstacle",  render: { visible: false }
@@ -135,27 +184,42 @@ worldCanvas.addEventListener("pointercancel", () => {
 
 function getCanvasPos(e) {
   const rect = worldCanvas.getBoundingClientRect();
+  const cx = (e.clientX - rect.left) * (WORLD_W / rect.width);
+  const cy = (e.clientY - rect.top) * (WORLD_H / rect.height);
+
+  const dx = cx - (FFT_W+HOLE_W/2);
+  const dy = cy - (HOLE_H/2);
+
+  const cos = Math.cos(-angleRad);
+  const sin = Math.sin(-angleRad);
+
   return {
-    px: (e.clientX - rect.left) * (WORLD_W / rect.width),
-    py: (e.clientY - rect.top) * (WORLD_H / rect.height)
+    px: dx * cos - dy * sin + HOLE_W/2 + FFT_W,
+    py: dx * sin + dy * cos + HOLE_H/2
   };
 }
 
 function handleCell(e) {
   const {px, py} = getCanvasPos(e);
-  if (px < FFT_W){
+  if (px < GRID_X){
     if (py > WORLD_H - FFT_H){
       randomKickBall();
     }
     return;
   }
-  if (px > WORLD_W) return;
-  if (py < 0) return;
-  if (py > WORLD_H) return;
+  if ((px < GRID_X + cellW*3) &&
+      (py > WORLD_H - cellH)) {
+        randomKickBall();
+        return;
+  }
+  if (px > GRID_X + GRID_W) return;
+  if (py < cellH) return;
+  if (py > WORLD_H - cellH) return;
 
-  const gx = Math.floor((px - FFT_W) / cellW);
+  const gx = Math.floor((px - GRID_X) / cellW);
   const gy = Math.floor(py / cellH);
   const key = `${gx},${gy}`;
+
   if (touchedCells.has(key)) return;
   // touchedCells.clear();
   touchedCells.add(key);
@@ -204,14 +268,14 @@ Matter.Events.on(engine, "afterUpdate", () => {
 
   if (y < -ballRadius) {
     Body.setPosition(ball, {
-      x: x,
+      x: ((x - FFT_W - 104) * 94 / 144) + FFT_W,
       y: WORLD_H + ballRadius
     });
   }
 
   if (y > WORLD_H + ballRadius) {
     Body.setPosition(ball, {
-      x: x,
+      x: ((x - FFT_W) * 144 / 94) + FFT_W + 104,
       y: -ballRadius
     });
   }
@@ -244,39 +308,51 @@ function yNorm() {
 
 function drawWall() {
   wctx.strokeStyle = "#555";
+  //wctx.strokeStyle = "rgba(255,255,255,0.6)";
   wctx.lineWidth = 1;
 
   wctx.beginPath();
-  wctx.moveTo(FFT_W, 0);
+  wctx.moveTo(FFT_W+104, 0);
   wctx.lineTo(FFT_W, WORLD_H - FFT_H);
   wctx.stroke();
 
   wctx.beginPath();
-  wctx.moveTo(WORLD_W-1, 0);
-  wctx.lineTo(WORLD_W-1, WORLD_H);
+  wctx.moveTo(WORLD_W, 0);
+  wctx.lineTo(WORLD_W-154, WORLD_H);
   wctx.stroke();
 }
 
 function drawGrid() {
-  wctx.strokeStyle = "rgba(255,255,255,0.08)";
+  //world座標
+  wctx.save();
+  wctx.translate((WORLD_W - HOLE_W) + HOLE_W/2, HOLE_H/2);
+  wctx.rotate(angleRad);
+  wctx.translate(-(HOLE_W/2)-FFT_W, -(HOLE_H/2));
+
+  wctx.strokeStyle = "rgba(255,255,255,0.2)";
   wctx.lineWidth = 1;
 
-  for (let x = 0; x < GRID_X; x++) {
+  for (let x = 0; x <= GRID_XC; x++) {
+    // 縦線
     wctx.beginPath();
-    wctx.moveTo(x * cellW + FFT_W, 0);
-    wctx.lineTo(x * cellW + FFT_W, HOLE_H);
+    wctx.moveTo(x * cellW + GRID_X, cellH);
+    wctx.lineTo(x * cellW + GRID_X, HOLE_H - cellH);
     wctx.stroke();
   }
 
-  for (let y = 0; y <= GRID_Y; y++) {
+  for (let y = 1; y < GRID_YC; y++) {
+    // 横線
     wctx.beginPath();
-    wctx.moveTo(FFT_W, y * cellH);
-    wctx.lineTo(WORLD_W, y * cellH);
+    wctx.moveTo(GRID_X, y * cellH);
+    wctx.lineTo(GRID_X + GRID_W, y * cellH);
     wctx.stroke();
   }
+
+  wctx.restore();
 }
 
 function drawObstacles(){
+  // world座標
   gridObstacles.forEach(v => {
     wctx.beginPath();
     wctx.arc(v.position.x, v.position.y, obstacleRadius, 0, Math.PI * 2);
@@ -321,14 +397,14 @@ function drawMoon(){
     { x:-0.10, y: 0.45, s:0.08 },
 
     // 中
-    { x:  0.42, y: -0.20, s: 0.07 },
+    { x:  0.42, y: -0.20, s: 0.04 },
     { x:  0.10, y: -0.48, s: 0.05 },
     { x:  0.05, y:  0.18, s: 0.035 },
 
     // ほぼ縁
-    { x: 0.90, y: 0.05, s:0.11 },
-    { x:-0.50, y: 0.80, s:0.07 },
-    { x: 0.05, y: 0.90, s:0.065 },
+    // { x: 0.90, y: 0.05, s:0.11 },
+    { x:-0.50, y: 0.80, s:0.03 },
+    // { x: 0.05, y: 0.90, s:0.065 },
 
   ].forEach(c => {
     wctx.beginPath();

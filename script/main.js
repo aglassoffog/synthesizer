@@ -122,7 +122,7 @@ let baseFilterFreq = 6000;
 let baseDelayTime = 0.3;
 let baseDelayFeedback = 0.35;
 let baseDelaySend = 0.4;
-let baseReverbDecay = 4;
+let baseReverbDecay = 2;
 let baseReverbTone = 4500;
 let baseReverbSend = 0.4;
 
