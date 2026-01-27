@@ -1,15 +1,15 @@
 const { Engine, Render, World, Bodies, Body, Runner } = Matter;
 const WORLD_W = worldCanvas.width, WORLD_H = worldCanvas.height;
-const HOLE_W = 248, HOLE_H = WORLD_H;
-const FFT_W = WORLD_W - HOLE_W, FFT_H = 220;
+const FFT_W = fftCanvas.width + 2, FFT_H = fftCanvas.height;
+const HOLE_W = WORLD_W - FFT_W, HOLE_H = WORLD_H;
 const BALL_SPEED = 5;
 let ballRadius = 13;
 const obstacleRadius = 4;
-const GRID_X = FFT_W + 30;
-const GRID_W = 140;
-const GRID_XC = 10;
+const GRID_X = FFT_W + 51;
+const GRID_W = 246;
+const GRID_XC = 14;
 const GRID_YC = 42;
-const angleRad = Math.PI/15;
+const angleRad = -(Math.PI/6);
 const gridObstacles = new Map();
 const wctx = worldCanvas.getContext("2d");
 const cellW = GRID_W / GRID_XC;
@@ -45,14 +45,14 @@ function createBall(x, y) {
 let ball = createBall(WORLD_W - HOLE_W/2, WORLD_H/2);
 
 const wallLeft = Bodies.rectangle(
-  FFT_W - 20, -8, 40, (WORLD_H - FFT_H) * 2,
+  FFT_W - 20, (WORLD_H - FFT_H)/2 + FFT_H, 40, WORLD_H - FFT_H,
   {
     isStatic: true, label: "wall-left", render: {visible: false}
   }
 );
 
 const wallLeft2 = Bodies.rectangle(
-  -20, WORLD_H - (FFT_H / 2), 40, FFT_H,
+  -20, FFT_H/2, 40, FFT_H,
   {
     isStatic: true, label: "wall-left", render: {visible: false}
   }
@@ -66,44 +66,43 @@ const wallRight = Bodies.rectangle(
 );
 
 const wallTop = Bodies.rectangle(
-  FFT_W / 2, WORLD_H - FFT_H - 20, FFT_W, 40,
+  FFT_W / 2, -2, FFT_W, 4,
   {
     isStatic: true, label: "wall-top", render: {visible: false}
   }
 );
 
 const wallBottom = Bodies.rectangle(
-  FFT_W / 2, WORLD_H + 20, FFT_W, 40,
+  FFT_W / 2, FFT_H + 20, FFT_W, 40,
   {
     isStatic: true, label: "wall-bottom", render: {visible: false}
   }
 );
 
 const leftSlope = Matter.Bodies.fromVertices(
-  FFT_W + 35,
-  (HOLE_H-FFT_H)/2 - 85,
+  FFT_W + 67,
+  (HOLE_H-FFT_H)/2 + FFT_H + 59,
   [
-    { x: 0,   y: -((HOLE_H-FFT_H)/2)+6},
-    { x: 104,  y: -((HOLE_H-FFT_H)/2)+6},
-    { x: 0, y: (HOLE_H-FFT_H)/2 }
+    { x: 0,   y: ((HOLE_H-FFT_H)/2)},
+    { x: 197,  y: ((HOLE_H-FFT_H)/2)},
+    { x: 0, y: -(HOLE_H-FFT_H)/2}
   ],
   {
     isStatic: true,
     label: "wall-left",
     render: {visible: false},
-    visible: false,
     restitution: 0.85
   },
   true
 );
 
 const rightSlope = Matter.Bodies.fromVertices(
-  WORLD_W - 50,
-  HOLE_H/2 + 120,
+  WORLD_W - 114,
+  HOLE_H/2 - 100,
   [
-    { x: 0,   y: -(HOLE_H/2)},
-    { x: 0,  y: HOLE_H/2-1},
-    { x: -154, y: HOLE_H/2-1 }
+    { x: 0,   y: (HOLE_H/2)},
+    { x: 0,  y: -(HOLE_H/2)+1},
+    { x: -345, y: -(HOLE_H/2)+1}
   ],
   {
     isStatic: true,
@@ -118,7 +117,7 @@ World.add(engine.world, [
   ball,
   wallLeft,
   wallLeft2,
-  wallRight,
+  // wallRight,
   wallTop,
   wallBottom,
   leftSlope,
@@ -202,19 +201,19 @@ function getCanvasPos(e) {
 function handleCell(e) {
   const {px, py} = getCanvasPos(e);
   if (px < GRID_X){
-    if (py > WORLD_H - FFT_H){
+    if (py < FFT_H){
       randomKickBall();
     }
     return;
   }
-  if ((px < GRID_X + cellW*3) &&
-      (py > WORLD_H - cellH)) {
+  if ((px < GRID_X + cellW*7) &&
+      (py < 0)) {
         randomKickBall();
         return;
   }
   if (px > GRID_X + GRID_W) return;
-  if (py < cellH) return;
-  if (py > WORLD_H - cellH) return;
+  if (py < 0) return;
+  if (py > WORLD_H - cellH*5) return;
 
   const gx = Math.floor((px - GRID_X) / cellW);
   const gy = Math.floor(py / cellH);
@@ -268,14 +267,14 @@ Matter.Events.on(engine, "afterUpdate", () => {
 
   if (y < -ballRadius) {
     Body.setPosition(ball, {
-      x: ((x - FFT_W - 104) * 94 / 144) + FFT_W,
+      x: ((x - FFT_W) / 133 * 281) + FFT_W + 197,
       y: WORLD_H + ballRadius
     });
   }
 
   if (y > WORLD_H + ballRadius) {
     Body.setPosition(ball, {
-      x: ((x - FFT_W) * 144 / 94) + FFT_W + 104,
+      x: Math.min(555 - ballRadius*2, ((x - FFT_W - 197) / 281 * 133) + FFT_W),
       y: -ballRadius
     });
   }
@@ -312,13 +311,13 @@ function drawWall() {
   wctx.lineWidth = 1;
 
   wctx.beginPath();
-  wctx.moveTo(FFT_W+104, 0);
-  wctx.lineTo(FFT_W, WORLD_H - FFT_H);
+  wctx.moveTo(FFT_W, FFT_H);
+  wctx.lineTo(FFT_W+197, WORLD_H);
   wctx.stroke();
 
   wctx.beginPath();
-  wctx.moveTo(WORLD_W, 0);
-  wctx.lineTo(WORLD_W-154, WORLD_H);
+  wctx.moveTo(WORLD_W-345, 0);
+  wctx.lineTo(WORLD_W, WORLD_H);
   wctx.stroke();
 }
 
@@ -335,12 +334,12 @@ function drawGrid() {
   for (let x = 0; x <= GRID_XC; x++) {
     // 縦線
     wctx.beginPath();
-    wctx.moveTo(x * cellW + GRID_X, cellH);
-    wctx.lineTo(x * cellW + GRID_X, HOLE_H - cellH);
+    wctx.moveTo(x * cellW + GRID_X, 0);
+    wctx.lineTo(x * cellW + GRID_X, HOLE_H - cellH*5);
     wctx.stroke();
   }
 
-  for (let y = 1; y < GRID_YC; y++) {
+  for (let y = 0; y < GRID_YC-4; y++) {
     // 横線
     wctx.beginPath();
     wctx.moveTo(GRID_X, y * cellH);

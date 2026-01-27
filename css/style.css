@@ -1,41 +1,18 @@
 body { background:#111; color:#eee; font-family:sans-serif; }
-label { color:#0ff; text-align: center;}
-select {
-  width:80px;
-  height: 30px;
-  background: #222;
-  color: #aaa;
-  font-size: 12px;
-}
 
-.knob {
-    display:flex;
-    flex-direction:column;
-    width: 58px;
-    height: 70px;
+.coords { font-family:monospace; color:#0ff; }
+.operation {
+  padding-top: 4px;
+  font-size: 13px;
+  color: #eee;
+  font-weight: bold;
 }
-.fader {
-  margin-left: 0px;
-  transform: rotate(-90deg);
-  width: 60px;
-  height: 60px;
-}
-.select-container {
-  display:flex;
-  align-items: center;
-  height: 60px;
-}
-
-
-.coords { font-family:monospace; color:#0ff; margin-top:8px; }
-.disp-val1 { position: absolute; left: 118px; top: 429px;}
-.disp-val2 { position: absolute; left: 192px; top: 429px;}
 .version { color:#888; font-size:12px; }
 .footer { color: #666;  font-size: 11px; }
 
 .container {
   position: relative;
-  height: 520px;
+  height: 315px;
   font-size:12px;
 }
 
@@ -50,27 +27,11 @@ select {
   margin-top: 10px;
 }
 
-.operation {
-  padding-top: 4px;
-  font-size: 13px;
-  color: #eee;
-  font-weight: bold;
-}
-
-.row-label {
-  width: 80px;
-  padding-top: 4px;
-  font-size: 13px;
-  color: #eee;
-  font-weight: bold;
-}
-
 .controls {
   display: flex;
   gap: 14px;
   flex-wrap: wrap;
 }
-
 
 .waveform-buttons {
   display: flex;
@@ -146,12 +107,12 @@ select {
 }
 
 .canvas-container {
-  display:flex;
+  display: flex;
   position: relative;
-  width: 630px;
-  height: 220px;
+  width: 0;
+  height: 0;
   gap:6px;
-  margin-top:20px;
+  margin-top:10px;
 }
 
 .canvasA { background:#000; border:1px solid #333; display:block; }
@@ -159,30 +120,38 @@ select {
 
 #worldCanvas {
   position: absolute;
-  left: 0;
-  top: -500px;
+  left: 75px;
+  top: -360px;
   z-index: 2;
   opacity: 0.7;
   touch-action: none;
 }
 
-#fft {
+#fftCanvas {
   position: absolute;
-  left: 0;
-  top: 0;
+  left: 75px;
+  top: -360px;
   z-index: 1;
 }
 
 #xy {
   position: absolute;
-  left: 200px;
-  top: -20px;
+  left: 275px;
+  top: -380px;
   z-index: 1;
 }
 
 #scope {
   position: absolute;
-  left: 30px;
-  top: 0;
+  left: 105px;
+  top: -360px;
   z-index: 1;
+}
+
+.footer-container {
+  display: block;
+  position: relative;
+  gap:6px;
+  margin-top:8px;
+  margin-left:75px;
 }

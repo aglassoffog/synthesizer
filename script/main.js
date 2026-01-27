@@ -112,7 +112,54 @@ function onSideWallCollision(wall){
   }
 }
 
+waveBtn.onclick = () => {wavePopup.classList.remove("hidden");}
+wavePopup.addEventListener("pointerdown", e => {
+  if (e.target === wavePopup) {
+    wavePopup.classList.add("hidden");
+  }
+});
 
+envBtn.onclick = () => {envPopup.classList.remove("hidden");}
+envPopup.addEventListener("pointerdown", e => {
+  if (e.target === envPopup) {
+    envPopup.classList.add("hidden");
+  }
+});
+
+filterBtn.onclick = () => {filterPopup.classList.remove("hidden");}
+filterPopup.addEventListener("pointerdown", e => {
+  if (e.target === filterPopup) {
+    filterPopup.classList.add("hidden");
+  }
+});
+
+delayBtn.onclick = () => {delayPopup.classList.remove("hidden");}
+delayPopup.addEventListener("pointerdown", e => {
+  if (e.target === delayPopup) {
+    delayPopup.classList.add("hidden");
+  }
+});
+
+reverbBtn.onclick = () => {reverbPopup.classList.remove("hidden");}
+reverbPopup.addEventListener("pointerdown", e => {
+  if (e.target === reverbPopup) {
+    reverbPopup.classList.add("hidden");
+  }
+});
+
+physicsBtn.onclick = () => {physicsPopup.classList.remove("hidden");}
+physicsPopup.addEventListener("pointerdown", e => {
+  if (e.target === physicsPopup) {
+    physicsPopup.classList.add("hidden");
+  }
+});
+
+keyBtn.onclick = () => {keyPopup.classList.remove("hidden");}
+keyPopup.addEventListener("pointerdown", e => {
+  if (e.target === keyPopup) {
+    keyPopup.classList.add("hidden");
+  }
+});
 /* ---------- Audio Nodes ---------- */
 let master;
 let filter, delay, reverb;
@@ -160,7 +207,7 @@ delayTime.oninput = e => {
   setDelayTime(baseDelayTime);
 };
 
-delayFb.oninput = e => {
+delayFeedback.oninput = e => {
   baseDelayFeedback = parseFloat(e.target.value);
   if (!delay) return;
   setDelayFeedback(baseDelayFeedback);

@@ -1,6 +1,6 @@
 // Canvasコンテキスト
 const sctx = scope.getContext("2d");
-const fctx = fft.getContext("2d");
+const fctx = fftCanvas.getContext("2d");
 const xyCtx = xy.getContext("2d");
 
 // データ配列
@@ -52,10 +52,10 @@ function drawLoop(){
   }
 
   // FFT
-  const fftHeight = fft.height;
+  const fftHeight = fftCanvas.height;
   analyser.getByteFrequencyData(freqData);
-  fctx.clearRect(0,0,fft.width,fft.height);
-  const barWidth = fft.width / freqData.length;
+  fctx.clearRect(0,0,fftCanvas.width,fftCanvas.height);
+  const barWidth = fftCanvas.width / freqData.length;
   for(let i=0;i<freqData.length;i++){
     const h=(freqData[i]/255)*(fftHeight-10);
     fctx.fillStyle="#08f";

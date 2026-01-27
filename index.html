@@ -1,183 +1,222 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<title>Gravity Rhythm Synth</title>
-<link rel="stylesheet" href="css/style.css">
+  <meta charset="UTF-8">
+  <title>Gravity Rhythm Synth</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/popup.css">
 </head>
 <body>
-
 <h2>Gravity Rhythm Synth 🌙</h2>
 
 <div class="container">
-<div class="control-container">
+  <div class="control-container">
 
-  <div class="controls">
-    <button id="startBtn" class="start-btn">START</button>
-  </div>
-
-  <div class="control-row">
-    <div class="row-label">Waveform</div>
     <div class="controls">
-      <div class="waveform-buttons">
-        <button class="waveform-btn active" data-waveform="sine">Sine</button>
-        <button class="waveform-btn" data-waveform="square">Square</button>
-        <button class="waveform-btn" data-waveform="sawtooth">Saw</button>
-        <button class="waveform-btn" data-waveform="triangle">Triangle</button>
-      </div>
+      <button id="startBtn" class="start-btn">START</button>
     </div>
-  </div>
 
-  <div class="control-row">
-    <div class="row-label">Envelope</div>
-    <div class="controls">
-      <div class="knob">
-        <input class="fader" id="attack" type="range" min="0.001" max="1" step="0.001" value="0.01">
-        <label>Attack</label>
-      </div>
-      <div class="knob">
-        <input class="fader" id="decay" type="range" min="0.001" max="1" step="0.001" value="0.1">
-        <label>Decay</label>
-      </div>
-      <div class="knob">
-        <input class="fader" id="sustain" type="range" min="0" max="1" step="0.01" value="0.7">
-        <label>Sustain</label>
-      </div>
-      <div class="knob">
-        <input class="fader" id="release" type="range" min="0.001" max="2" step="0.001" value="0.2">
-        <label>Release</label>
-      </div>
-    </div>
-  </div>
-
-  <div class="control-row">
-    <div class="row-label">Filter</div>
-    <div class="controls">
-      <div class="knob">
-        <div class="select-container">
-          <select id="filterType">
-            <option value="off">OFF</option>
-            <option value="lowpass" selected>LPF</option>
-            <option value="highpass">HPF</option>
-            <option value="bandpass">BPF</option>
-          </select>
+    <div class="control-row">
+      <button id="waveBtn" class="popup-btn">Waveform</button>
+      <div id="wavePopup" class="popup hidden">
+        <div class="popupInner">
+          <h2>Waveform</h2>
+          <div class="paramRow">
+            <div class="param">
+              <div class="waveform-buttons">
+                <button class="waveform-btn active" data-waveform="sine">Sine</button>
+                <button class="waveform-btn" data-waveform="square">Square</button>
+                <button class="waveform-btn" data-waveform="sawtooth">Saw</button>
+                <button class="waveform-btn" data-waveform="triangle">Triangle</button>
+              </div>
+            </div>
+          </div>
         </div>
-        <label>Type</label>
-      </div>
-      <div class="knob">
-        <input class="fader" id="filterFreq" type="range" min="100" max="12000" value="6000">
-        <label>Freq</label>
-      </div>
-      <div class="knob">
-        <input class="fader" id="filterQ" type="range" min="0.1" max="20" step="0.1" value="0.7">
-        <label>Q</label>
       </div>
     </div>
-  </div>
 
-  <div class="control-row">
-    <div class="row-label">Delay</div>
-    <div class="controls">
-      <div class="knob">
-        <input class="fader" id="delayTime" type="range" min="0" max="1.5" step="0.01" value="0.3">
-        <label>Time</label>
-      </div>
-      <div class="knob">
-        <input class="fader" id="delayFb" type="range" min="0" max="0.85" step="0.01" value="0.35">
-        <label>Feedback</label>
-      </div>
-      <div class="knob">
-        <input class="fader" id="delaySend" type="range" min="0" max="1" step="0.01" value="0.4">
-        <label>Send</label>
-      </div>
-    </div>
-  </div>
-
-  <div class="control-row">
-    <div class="row-label">Reverb</div>
-    <div class="controls">
-      <div class="knob">
-        <input class="fader" id="reverbDecay" type="range" min="0.5" max="4" step="0.1" value="2">
-        <label>Decay</label>
-      </div>
-      <div class="knob">
-        <input class="fader" id="reverbTone" type="range" min="800" max="8000" step="50" value="4500">
-        <label>Tone</lavel>
-      </div>
-      <div class="knob">
-        <input class="fader" id="reverbSend" type="range" min="0" max="1" step="0.01" value="0.4">
-        <label>Send</label>
-      </div>
-    </div>
-  </div>
-
-  <div class="control-row">
-    <div class="row-label">Physics</div>
-    <div class="controls">
-      <div class="knob">
-        <input class="fader" id="ballSize" type="range" min="5" max="40" step="1" value="13">
-        <label>Ball Size</label>
-        <span class="disp-val1" id="ballSizeVal">13</span>
-      </div>
-
-      <div class="knob">
-        <input class="fader" id="gravity" type="range" min="-0.5" max="0.5" step="0.01" value="0">
-        <label>Gravity</label>
-        <div class="disp-val2" id="gravityVal">0</div>
-      </div>
-
-      <div class="knob">
-        <div class="select-container">
-          <select id="yAssign">
-            <option value="off">OFF</option>
-            <option value="pitch">Pitch</option>
-            <option value="vibrato">Vibrato</option>
-            <option value="env">Envelope</option>
-            <option value="filter">Filter</option>
-            <option value="delay">Delay</option>
-          </select>
+    <div class="control-row">
+      <button id="envBtn" class="popup-btn">Envelope</button>
+      <div id="envPopup" class="popup hidden">
+        <div class="popupInner">
+          <h2>Envelope</h2>
+          <div class="paramRow">
+            <div class="param">
+              <input id="attack" type="range" min="0.001" max="1" step="0.001" value="0.01">
+              <span>Attack</span>
+            </div>
+            <div class="param">
+              <input id="decay" type="range" min="0.001" max="1" step="0.001" value="0.1">
+              <span>Decay</span>
+            </div>
+            <div class="param">
+              <input id="sustain" type="range" min="0" max="1" step="0.01" value="0.7">
+              <span>Sustain</span>
+            </div>
+            <div class="param">
+              <input id="release" type="range" min="0.001" max="2" step="0.001" value="0.2">
+              <span>Release</span>
+            </div>
+          </div>
         </div>
-        <label>Y Assign</label>
-      </div>
-
-    </div>
-  </div>
-
-  <div class="control-row">
-    <div class="row-label">Keys</div>
-    <div class="controls">
-      <div id="keyButtons" class="key-buttons">
-        <button class="key-btn active" data-key="c">C</button>
-        <button class="key-btn" data-key="d">D</button>
-        <button class="key-btn" data-key="e">E</button>
-        <button class="key-btn" data-key="f">F</button>
-        <button class="key-btn" data-key="g">G</button>
-        <button class="key-btn" data-key="a">A</button>
-        <button class="key-btn" data-key="b">B</button>
       </div>
     </div>
-  </div>
 
+    <div class="control-row">
+      <button id="filterBtn" class="popup-btn">Filter</button>
+      <div id="filterPopup" class="popup hidden">
+        <div class="popupInner">
+          <h2>Filter</h2>
+          <div class="paramRow">
+            <div class="param">
+              <div class="paramWrap">
+                <select id="filterType">
+                  <option value="off">OFF</option>
+                  <option value="lowpass" selected>LPF</option>
+                  <option value="highpass">HPF</option>
+                  <option value="bandpass">BPF</option>
+                </select>
+              </div>
+              <span>Type</span>
+            </div>
+            <div class="param">
+              <input id="filterFreq" type="range" min="100" max="12000" value="6000">
+              <span>Freq</span>
+            </div>
+            <div class="param">
+              <input id="filterQ" type="range" min="0.1" max="20" step="0.1" value="0.7">
+              <span>Q</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="control-row">
+      <button id="delayBtn" class="popup-btn">Delay</button>
+      <div id="delayPopup" class="popup hidden">
+        <div class="popupInner">
+          <h2>Delay</h2>
+          <div class="paramRow">
+            <div class="param">
+              <input id="delayTime" type="range" min="0" max="1.5" step="0.01" value="0.3">
+              <span>Time</span>
+            </div>
+            <div class="param">
+              <input id="delayFeedback" type="range" min="0" max="0.85" step="0.01" value="0.35">
+              <span>Feedback</span>
+            </div>
+            <div class="param">
+              <input id="delaySend" type="range" min="0" max="1" step="0.01" value="0.4">
+              <span>Send</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="control-row">
+      <button id="reverbBtn" class="popup-btn">Reverb</button>
+      <div id="reverbPopup" class="popup hidden">
+        <div class="popupInner">
+          <h2>Reverb</h2>
+          <div class="paramRow">
+            <div class="param">
+              <input id="reverbDecay" type="range" min="0.5" max="4" step="0.1" value="2">
+              <span>Decay</span>
+            </div>
+            <div class="param">
+              <input id="reverbTone" type="range" min="800" max="8000" step="50" value="4500">
+              <span>Tone</span>
+            </div>
+            <div class="param">
+              <input id="reverbSend" type="range" min="0" max="1" step="0.01" value="0.4">
+              <span>Send</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="control-row">
+      <button id="physicsBtn" class="popup-btn">Physics</button>
+      <div id="physicsPopup" class="popup hidden">
+        <div class="popupInner">
+          <h2>Physics</h2>
+          <div class="paramRow">
+            <div class="param">
+              <div class="paramWrap">
+                <input id="ballSize" type="range" min="5" max="40" step="1" value="13">
+                <div class="paramText" id="ballSizeVal">13</div>
+              </div>
+              <span>Ball Size</span>
+            </div>
+            <div class="param">
+              <div class="paramWrap">
+                <input id="gravity" type="range" min="-0.5" max="0.5" step="0.01" value="0.00">
+                <div class="paramText" id="gravityVal">0</div>
+              </div>
+              <span>Gravity</span>
+            </div>
+            <div class="param">
+              <div class="paramWrap">
+                <select id="yAssign">
+                  <option value="off">OFF</option>
+                  <option value="pitch">Pitch</option>
+                  <option value="vibrato">Vibrato</option>
+                  <option value="env">Envelope</option>
+                  <option value="filter">Filter</option>
+                  <option value="delay">Delay</option>
+                </select>
+              </div>
+              <span>Y Assign</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="control-row">
+      <button id="keyBtn" class="popup-btn">Key</button>
+      <div id="keyPopup" class="popup hidden">
+        <div class="popupInner">
+          <h2>Key</h2>
+          <div class="paramRow">
+            <div class="param">
+              <div class="key-buttons">
+                <button class="key-btn active" data-key="c">C</button>
+                <button class="key-btn" data-key="d">D</button>
+                <button class="key-btn" data-key="e">E</button>
+                <button class="key-btn" data-key="f">F</button>
+                <button class="key-btn" data-key="g">G</button>
+                <button class="key-btn" data-key="a">A</button>
+                <button class="key-btn" data-key="b">B</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
 </div>
+
+<div class="footer-container">
+  <div class="coords">
+  X:<span id="posX">0</span> | Y:<span id="posY">0</span>
+  </div>
+  <div class="operation">SPACE KEY or GRAPH AREA：KICK</div>
+  <div class="version">Version: v1.3.1</div>
+  <footer class="footer">Created by aglassoffog</footer>
 </div>
 
 <div class="canvas-container">
-  <canvas id="fft" class="canvasA" width="380" height="220"></canvas>
+  <canvas id="fftCanvas" class="canvasA" width="420" height="260"></canvas>
   <canvas id="xy" class="canvasB" width="240" height="240"></canvas>
   <canvas id="scope" class="canvasB" width="140" height="140"></canvas>
-  <canvas id="worldCanvas" class="canvasB" width="630" height="720"></canvas>
+  <canvas id="worldCanvas" class="canvasB" width="900" height="600"></canvas>
 </div>
 
-<div class="coords">
-X:<span id="posX">0</span> | Y:<span id="posY">0</span>
-</div>
-
-<div class="operation">SPACE KEY or GRAPH AREA：KICK</div>
-<div class="version">Version: v1.2.3</div>
-
-<footer class="footer">
-  Created by aglassoffog
-</footer>
 
 <audio id="audioEl" playsinline></audio>
 
