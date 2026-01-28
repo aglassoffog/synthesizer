@@ -136,14 +136,14 @@ body { background:#111; color:#eee; font-family:sans-serif; }
 
 #xy {
   position: absolute;
-  left: 275px;
+  left: 460px;
   top: -380px;
   z-index: 1;
 }
 
 #scope {
   position: absolute;
-  left: 105px;
+  left: 150px;
   top: -360px;
   z-index: 1;
 }

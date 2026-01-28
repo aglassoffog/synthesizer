@@ -154,12 +154,6 @@ physicsPopup.addEventListener("pointerdown", e => {
   }
 });
 
-keyBtn.onclick = () => {keyPopup.classList.remove("hidden");}
-keyPopup.addEventListener("pointerdown", e => {
-  if (e.target === keyPopup) {
-    keyPopup.classList.add("hidden");
-  }
-});
 /* ---------- Audio Nodes ---------- */
 let master;
 let filter, delay, reverb;

@@ -3,9 +3,6 @@
   inset: 0;
   background: rgba(0,0,0,0.6);
   backdrop-filter: blur(1px);
-  display: flex;
-  justify-content: center;
-  align-items: center;
   z-index: 100;
 }
 
@@ -30,6 +27,9 @@
 }
 
 .popupInner {
+  position: relative;
+  left: 100px;
+  top: 120px;
   width: 90%;
   max-width: 360px;
   padding: 24px;
@@ -92,14 +92,4 @@
 .param span {
   color: #0ff;
   font-size: 12px;
-}
-
-.close-btn {
-  width: 36px;
-  height: 36px;
-  border: 1px solid #555;
-  background: #222;
-  color: #aaa;
-  cursor: pointer;
-  font-size: 20px;
 }

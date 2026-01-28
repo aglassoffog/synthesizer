@@ -31,6 +31,19 @@
               </div>
             </div>
           </div>
+          <div class="paramRow">
+            <div class="param">
+              <div class="key-buttons">
+                <button class="key-btn active" data-key="c">C</button>
+                <button class="key-btn" data-key="d">D</button>
+                <button class="key-btn" data-key="e">E</button>
+                <button class="key-btn" data-key="f">F</button>
+                <button class="key-btn" data-key="g">G</button>
+                <button class="key-btn" data-key="a">A</button>
+                <button class="key-btn" data-key="b">B</button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -175,29 +188,6 @@
         </div>
       </div>
     </div>
-
-    <div class="control-row">
-      <button id="keyBtn" class="popup-btn">Key</button>
-      <div id="keyPopup" class="popup hidden">
-        <div class="popupInner">
-          <h2>Key</h2>
-          <div class="paramRow">
-            <div class="param">
-              <div class="key-buttons">
-                <button class="key-btn active" data-key="c">C</button>
-                <button class="key-btn" data-key="d">D</button>
-                <button class="key-btn" data-key="e">E</button>
-                <button class="key-btn" data-key="f">F</button>
-                <button class="key-btn" data-key="g">G</button>
-                <button class="key-btn" data-key="a">A</button>
-                <button class="key-btn" data-key="b">B</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
   </div>
 </div>
 
@@ -211,10 +201,10 @@
 </div>
 
 <div class="canvas-container">
-  <canvas id="fftCanvas" class="canvasA" width="420" height="260"></canvas>
+  <canvas id="fftCanvas" class="canvasA" width="600" height="260"></canvas>
   <canvas id="xy" class="canvasB" width="240" height="240"></canvas>
   <canvas id="scope" class="canvasB" width="140" height="140"></canvas>
-  <canvas id="worldCanvas" class="canvasB" width="900" height="600"></canvas>
+  <canvas id="worldCanvas" class="canvasB" width="600" height="260"></canvas>
 </div>
 
 
@@ -224,6 +214,7 @@
 <script src="script/delay.js"></script>
 <script src="script/reverb.js"></script>
 <script src="script/filter.js"></script>
+<script src="script/stage1.js"></script>
 <script src="script/physics.js"></script>
 <script src="script/graphs.js"></script>
 <script src="script/main.js"></script>
