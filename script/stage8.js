@@ -1,7 +1,7 @@
 let S8_t = 0; // 進行（0〜1）
 let S8_rotation = 0;
-const S8_W = WORLD_W
-const S8_H = WORLD_H/4;
+const S8_W = worldCanvas.width;
+const S8_H = worldCanvas.height/4;
 const STAR_COUNT = 20;
 
 const star = Array.from({ length: STAR_COUNT }, createStar);
